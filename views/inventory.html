@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShopTrack - Inventory Management</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/inventory.css">
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="/home" class="logo">
+                    <div class="logo-icon">ST</div>
+                    <span class="logo-text">ShopTrack</span>
+                </a>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="/home" class="nav-item">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="/inventory" class="nav-item active">
+                    <i class="fas fa-box"></i>
+                    <span>Inventory</span>
+                    <span class="badge" id="lowStockBadge">0</span>
+                </a>
+                <a href="/sales" class="nav-item">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Sales</span>
+                </a>
+                <a href="/suppliers" class="nav-item">
+                    <i class="fas fa-truck"></i>
+                    <span>Suppliers</span>
+                </a>
+                <a href="/expenses" class="nav-item">
+                    <i class="fas fa-wallet"></i>
+                    <span>Expenses</span>
+                </a>
+                <a href="/reports" class="nav-item">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Reports</span>
+                </a>
+                <a href="/settings" class="nav-item">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+                <a href="/login" class="nav-item" style="margin-top: 2rem;" onclick="logout(); return false;">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Header -->
+            <header class="top-header">
+                <div class="header-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Search products...">
+                </div>
+                
+                <div class="header-actions">
+                    <button class="notification-btn">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge">0</span>
+                    </button>
+                    
+                    <a href="/settings" style="text-decoration: none;">
+                        <div class="user-menu">
+                            <div class="user-avatar" id="userAvatar">U</div>
+                            <div class="user-info">
+                                <span class="user-name" id="userName">Loading...</span>
+                                <span class="user-role" id="shopName">Loading...</span>
+                            </div>
+                            <i class="fas fa-chevron-down" style="color: var(--gray-400);"></i>
+                        </div>
+                    </a>
+                </div>
+            </header>
+
+            <!-- Page Header -->
+            <div class="page-header">
+                <div class="page-title">
+                    <h1>Inventory Management</h1>
+                    <p>Manage your products, stock levels, and reorder items</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-outline" onclick="exportInventory()">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                    <button class="btn btn-primary" onclick="openAddProductModal()">
+                        <i class="fas fa-plus"></i> Add Product
+                    </button>
+                </div>
+            </div>
+
+            <!-- Inventory Stats -->
+            <div class="inventory-stats">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>Total Products</h3>
+                        <div class="stat-value" id="totalProducts">0</div>
+                        <div class="stat-change positive" id="totalProductsChange">Loading...</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>In Stock</h3>
+                        <div class="stat-value" id="inStockCount">0</div>
+                        <div class="stat-change positive" id="inStockPercent">0% of inventory</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>Low Stock</h3>
+                        <div class="stat-value" id="lowStockCount">0</div>
+                        <div class="stat-change warning">Need reorder</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>Out of Stock</h3>
+                        <div class="stat-value" id="outOfStockCount">0</div>
+                        <div class="stat-change warning">Immediate action</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters Section -->
+            <div class="filters-section">
+                <div class="filters-header">
+                    <div class="filters-title">
+                        <i class="fas fa-filter"></i>
+                        Filter Products
+                    </div>
+                    <button class="btn btn-outline btn-sm" onclick="clearFilters()">
+                        <i class="fas fa-times"></i> Clear Filters
+                    </button>
+                </div>
+                
+                <div class="filters-grid">
+                    <div class="filter-group">
+                        <label class="filter-label">Category</label>
+                        <select class="filter-select" id="categoryFilter" onchange="applyFilters()">
+                            <option value="">All Categories</option>
+                            <option value="groceries">Groceries</option>
+                            <option value="dairy">Dairy</option>
+                            <option value="beverages">Beverages</option>
+                            <option value="snacks">Snacks</option>
+                            <option value="household">Household</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Supplier</label>
+                        <select class="filter-select" id="supplierFilter" onchange="applyFilters()">
+                            <option value="">All Suppliers</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Stock Status</label>
+                        <select class="filter-select" id="stockFilter" onchange="applyFilters()">
+                            <option value="">All Status</option>
+                            <option value="in-stock">In Stock</option>
+                            <option value="low-stock">Low Stock</option>
+                            <option value="out-of-stock">Out of Stock</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Price Range</label>
+                        <select class="filter-select" id="priceFilter" onchange="applyFilters()">
+                            <option value="">All Prices</option>
+                            <option value="0-50">Under ₹50</option>
+                            <option value="50-100">₹50 - ₹100</option>
+                            <option value="100-500">₹100 - ₹500</option>
+                            <option value="500+">Above ₹500</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="filter-actions">
+                    <button class="btn btn-primary" onclick="applyFilters()">
+                        <i class="fas fa-search"></i> Apply Filters
+                    </button>
+                </div>
+            </div>
+
+            <!-- Inventory Table -->
+            <div class="inventory-table-container">
+                <table class="inventory-table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Category</th>
+                            <th>Supplier</th>
+                            <th>Price</th>
+                            <th>Stock</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productsTableBody">
+                        <tr><td colspan="6" style="text-align: center;">Loading products...</td></tr>
+                    </tbody>
+                 </table>
+
+                <!-- Pagination -->
+                <div class="pagination">
+                    <button class="page-btn" id="prevPage" onclick="changePage(-1)" disabled>
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span id="pageInfo">Page 1</span>
+                    <button class="page-btn" id="nextPage" onclick="changePage(1)">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <button class="quick-actions-btn">
+            <i class="fas fa-plus"></i>
+        </button>
+        <div class="quick-actions-menu">
+            <a href="#" class="quick-action-item" onclick="openAddProductModal()">
+                <i class="fas fa-box"></i>
+                <span>Add Product</span>
+            </a>
+            <a href="#" class="quick-action-item" onclick="openBulkAddModal()">
+                <i class="fas fa-layer-group"></i>
+                <span>Bulk Import</span>
+            </a>
+            <a href="#" class="quick-action-item" onclick="openReorderModal()">
+                <i class="fas fa-truck"></i>
+                <span>Reorder Stock</span>
+            </a>
+            <a href="#" class="quick-action-item" onclick="scanBarcode()">
+                <i class="fas fa-barcode"></i>
+                <span>Scan Barcode</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Add Product Modal -->
+    <div id="addProductModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New Product</h2>
+                <button class="modal-close" onclick="closeAddProductModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="addProductForm" onsubmit="addProduct(event)">
+                <div class="form-row">
+                    <label>Product Name</label>
+                    <input type="text" id="productName" class="form-control" placeholder="Enter product name" required>
+                </div>
+                
+                <div class="form-row-half">
+                    <div>
+                        <label>Category</label>
+                        <select id="productCategory" class="form-control" required>
+                            <option value="">Select Category</option>
+                            <option value="1">Groceries</option>
+                            <option value="2">Dairy</option>
+                            <option value="3">Beverages</option>
+                            <option value="4">Snacks</option>
+                            <option value="5">Household</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Supplier</label>
+                        <select id="productSupplier" class="form-control">
+                            <option value="">Select Supplier (Optional)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row-half">
+                    <div>
+                        <label>Purchase Price</label>
+                        <input type="number" id="purchasePrice" class="form-control" placeholder="₹" required>
+                    </div>
+                    <div>
+                        <label>Selling Price</label>
+                        <input type="number" id="sellingPrice" class="form-control" placeholder="₹" required>
+                    </div>
+                </div>
+                
+                <div class="form-row-half">
+                    <div>
+                        <label>Initial Stock</label>
+                        <input type="number" id="initialStock" class="form-control" placeholder="Quantity" required>
+                    </div>
+                    <div>
+                        <label>Min Stock Level</label>
+                        <input type="number" id="minStock" class="form-control" placeholder="Alert at" value="5" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <label>Barcode (Optional)</label>
+                    <input type="text" id="productBarcode" class="form-control" placeholder="Scan or enter barcode">
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeAddProductModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Global variables
+        let allProducts = [];
+        let filteredProducts = [];
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let suppliersList = [];
+        
+        // Get token
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login';
+        }
+        
+        // Helper function to get initials
+        function getInitials(name) {
+            if (!name) return 'U';
+            return name.substring(0, 2).toUpperCase();
+        }
+        
+        // Load user info
+        async function loadUserInfo() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (user) {
+                document.getElementById('userName').innerText = user.username;
+                document.getElementById('shopName').innerText = user.shop_name || 'Your Shop';
+                document.getElementById('userAvatar').innerText = getInitials(user.username);
+            }
+        }
+        
+        // Load suppliers for dropdown
+        async function loadSuppliers() {
+            try {
+                const response = await fetch('/api/suppliers', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    suppliersList = data.suppliers;
+                    const supplierSelect = document.getElementById('productSupplier');
+                    supplierSelect.innerHTML = '<option value="">Select Supplier (Optional)</option>';
+                    suppliersList.forEach(s => {
+                        supplierSelect.innerHTML += `<option value="${s.id}">${escapeHtml(s.name)}</option>`;
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading suppliers:', error);
+            }
+        }
+        
+        // Load products
+        async function loadProducts() {
+            try {
+                const response = await fetch('/api/products', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    allProducts = data.products;
+                    applyFilters();
+                    updateStats();
+                }
+            } catch (error) {
+                console.error('Error loading products:', error);
+                document.getElementById('productsTableBody').innerHTML = '<tr><td colspan="7" style="text-align: center; color: red;">Error loading products</td></tr>';
+            }
+        }
+        
+        // Update inventory stats
+        function updateStats() {
+            const total = allProducts.length;
+            const inStock = allProducts.filter(p => p.current_stock > p.min_stock).length;
+            const lowStock = allProducts.filter(p => p.current_stock <= p.min_stock && p.current_stock > 0).length;
+            const outOfStock = allProducts.filter(p => p.current_stock === 0).length;
+            const inStockPercent = total > 0 ? ((inStock / total) * 100).toFixed(0) : 0;
+            
+            document.getElementById('totalProducts').innerText = total;
+            document.getElementById('inStockCount').innerText = inStock;
+            document.getElementById('inStockPercent').innerHTML = `${inStockPercent}% of inventory`;
+            document.getElementById('lowStockCount').innerText = lowStock;
+            document.getElementById('outOfStockCount').innerText = outOfStock;
+            document.getElementById('lowStockBadge').innerText = lowStock;
+            document.getElementById('totalProductsChange').innerHTML = `${total} products total`;
+        }
+        
+        // Apply filters
+        function applyFilters() {
+            const category = document.getElementById('categoryFilter').value;
+            const supplier = document.getElementById('supplierFilter').value;
+            const stockStatus = document.getElementById('stockFilter').value;
+            const priceRange = document.getElementById('priceFilter').value;
+            const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
+            
+            filteredProducts = allProducts.filter(product => {
+                // Category filter
+                if (category && product.category_name?.toLowerCase() !== category && 
+                    product.category_id?.toString() !== category) {
+                    return false;
+                }
+                
+                // Supplier filter
+                if (supplier && product.supplier_name?.toLowerCase() !== supplier && 
+                    product.supplier_id?.toString() !== supplier) {
+                    return false;
+                }
+                
+                // Stock status filter
+                if (stockStatus === 'in-stock' && product.current_stock <= product.min_stock) return false;
+                if (stockStatus === 'low-stock' && (product.current_stock > product.min_stock || product.current_stock === 0)) return false;
+                if (stockStatus === 'out-of-stock' && product.current_stock > 0) return false;
+                
+                // Price range filter
+                if (priceRange) {
+                    const [min, max] = priceRange.split('-');
+                    if (max && (product.selling_price < parseInt(min) || product.selling_price > parseInt(max))) return false;
+                    if (priceRange === '500+' && product.selling_price < 500) return false;
+                    if (priceRange === '0-50' && (product.selling_price < 0 || product.selling_price > 50)) return false;
+                }
+                
+                // Search filter
+                if (searchTerm && !product.name.toLowerCase().includes(searchTerm)) return false;
+                
+                return true;
+            });
+            
+            currentPage = 1;
+            renderProductsTable();
+        }
+        
+        // Get stock badge HTML
+        function getStockBadge(product) {
+            if (product.current_stock === 0) {
+                return '<span class="stock-badge out-of-stock">Out of Stock</span>';
+            } else if (product.current_stock <= product.min_stock) {
+                return '<span class="stock-badge low-stock">Low Stock</span>';
+            } else {
+                return '<span class="stock-badge in-stock">In Stock</span>';
+            }
+        }
+        
+        // Render products table
+        function renderProductsTable() {
+            const tbody = document.getElementById('productsTableBody');
+            const start = (currentPage - 1) * itemsPerPage;
+            const paginatedProducts = filteredProducts.slice(start, start + itemsPerPage);
+            
+            if (paginatedProducts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No products found</td></tr>';
+                document.getElementById('pageInfo').innerText = `Page 0 of 0`;
+                document.getElementById('prevPage').disabled = true;
+                document.getElementById('nextPage').disabled = true;
+                return;
+            }
+            
+            tbody.innerHTML = paginatedProducts.map(product => `
+                <tr>
+                    <td>
+                        <div class="product-cell">
+                            <div class="product-icon">
+                                <i class="fas fa-box"></i>
+                            </div>
+                            <div class="product-info">
+                                <h4>${escapeHtml(product.name)}</h4>
+                                <p>ID: ${product.product_id || product.id} • Added: ${new Date(product.created_at).toLocaleDateString()}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${escapeHtml(product.category_name || 'Uncategorized')}</td>
+                    <td>${escapeHtml(product.supplier_name || 'N/A')}</td>
+                    <td>₹${product.selling_price}</td>
+                    <td>${product.current_stock}</td>
+                    <td>${getStockBadge(product)}</td>
+                </tr>
+            `).join('');
+            
+            const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+            document.getElementById('pageInfo').innerText = `Page ${currentPage} of ${totalPages}`;
+            document.getElementById('prevPage').disabled = currentPage === 1;
+            document.getElementById('nextPage').disabled = currentPage === totalPages;
+        }
+        
+        // Change page
+        function changePage(delta) {
+            const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+            const newPage = currentPage + delta;
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentPage = newPage;
+                renderProductsTable();
+            }
+        }
+        
+        // Add product
+        async function addProduct(event) {
+            event.preventDefault();
+            
+            const productData = {
+                name: document.getElementById('productName').value,
+                category_id: document.getElementById('productCategory').value || null,
+                supplier_id: document.getElementById('productSupplier').value || null,
+                purchase_price: parseFloat(document.getElementById('purchasePrice').value),
+                selling_price: parseFloat(document.getElementById('sellingPrice').value),
+                current_stock: parseInt(document.getElementById('initialStock').value),
+                min_stock: parseInt(document.getElementById('minStock').value),
+                barcode: document.getElementById('productBarcode').value || null
+            };
+            
+            const submitBtn = event.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+            submitBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/api/products', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(productData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Product added successfully!');
+                    closeAddProductModal();
+                    loadProducts();
+                    document.getElementById('addProductForm').reset();
+                } else {
+                    alert(data.message || 'Failed to add product');
+                }
+            } catch (error) {
+                console.error('Error adding product:', error);
+                alert('Server error. Please try again.');
+            } finally {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+        
+        // Edit product
+        function editProduct(id) {
+            const product = allProducts.find(p => p.id === id);
+            if (product) {
+                alert(`Edit product: ${product.name}\n\nThis feature will be implemented in the next update.\n\nCurrent stock: ${product.current_stock}\nMin stock: ${product.min_stock}\nPrice: ₹${product.selling_price}`);
+            }
+        }
+        
+        // Delete product
+        async function deleteProduct(id) {
+            if (!confirm('Are you sure you want to delete this product? This action cannot be undone.')) return;
+            
+            try {
+                const response = await fetch(`/api/products/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Product deleted successfully!');
+                    loadProducts();
+                } else {
+                    alert(data.message || 'Failed to delete product');
+                }
+            } catch (error) {
+                console.error('Error deleting product:', error);
+                alert('Server error. Please try again.');
+            }
+        }
+        
+        // Modal functions
+        function openAddProductModal() {
+            document.getElementById('addProductModal').classList.add('active');
+        }
+        
+        function closeAddProductModal() {
+            document.getElementById('addProductModal').classList.remove('active');
+        }
+        
+        // Filter functions
+        function clearFilters() {
+            document.getElementById('categoryFilter').value = '';
+            document.getElementById('supplierFilter').value = '';
+            document.getElementById('stockFilter').value = '';
+            document.getElementById('priceFilter').value = '';
+            document.getElementById('searchInput').value = '';
+            applyFilters();
+        }
+        
+     // Export function - Downloads as Excel/CSV
+function exportInventory() {
+    if (filteredProducts.length === 0) {
+        alert('No products to export');
+        return;
+    }
+    
+    // Prepare data for export
+    const exportData = filteredProducts.map(product => ({
+        'Product ID': product.product_id || product.id,
+        'Product Name': product.name,
+        'Category': product.category_name || 'Uncategorized',
+        'Supplier': product.supplier_name || 'N/A',
+        'Purchase Price (₹)': product.purchase_price || 0,
+        'Selling Price (₹)': product.selling_price || 0,
+        'Current Stock': product.current_stock,
+        'Min Stock Level': product.min_stock,
+        'Stock Status': getStockStatusText(product),
+        'Barcode': product.barcode || 'N/A',
+        'Last Updated': new Date(product.updated_at || product.created_at).toLocaleDateString()
+    }));
+    
+    // Convert to CSV
+    const headers = Object.keys(exportData[0]);
+    const csvRows = [];
+    
+    // Add headers
+    csvRows.push(headers.join(','));
+    
+    // Add data rows
+    for (const row of exportData) {
+        const values = headers.map(header => {
+            const value = row[header];
+            // Escape commas and quotes
+            if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+                return `"${value.replace(/"/g, '""')}"`;
+            }
+            return value;
+        });
+        csvRows.push(values.join(','));
+    }
+    
+    // Create CSV content with BOM for Excel compatibility
+    const csvContent = '\uFEFF' + csvRows.join('\n');
+    
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+    link.href = url;
+    link.setAttribute('download', `inventory_${timestamp}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    // Show success message
+    alert(`Exported ${filteredProducts.length} products successfully!`);
+}
+
+// Helper function to get stock status text
+function getStockStatusText(product) {
+    if (product.current_stock === 0) {
+        return 'Out of Stock';
+    } else if (product.current_stock <= product.min_stock) {
+        return 'Low Stock';
+    } else {
+        return 'In Stock';
+    }
+}
+        
+        // Quick action functions
+        function openBulkAddModal() {
+            alert('Bulk import feature: Upload CSV file with product list');
+        }
+        
+        function openReorderModal() {
+            const lowStockItems = allProducts.filter(p => p.current_stock <= p.min_stock);
+            if (lowStockItems.length === 0) {
+                alert('No low stock items to reorder');
+            } else {
+                alert(`Reorder needed for:\n${lowStockItems.map(p => `${p.name}: ${p.current_stock} left (Min: ${p.min_stock})`).join('\n')}`);
+            }
+        }
+        
+        function scanBarcode() {
+            alert('Barcode scanner activated. Scan product barcode to add to inventory.');
+        }
+        
+        // Escape HTML
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+        
+        // Logout function
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        }
+        
+        // Search input event
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUserInfo();
+            loadSuppliers();
+            loadProducts();
+            
+            // Search input
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.addEventListener('keyup', function() {
+                    applyFilters();
+                });
+            }
+            
+            // Quick Actions Menu
+            const quickActionsBtn = document.querySelector('.quick-actions-btn');
+            const quickActionsMenu = document.querySelector('.quick-actions-menu');
+            
+            if (quickActionsBtn && quickActionsMenu) {
+                quickActionsBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    quickActionsMenu.classList.toggle('open');
+                    quickActionsBtn.style.transform = quickActionsMenu.classList.contains('open') ? 'rotate(45deg)' : 'rotate(0deg)';
+                });
+                
+                document.addEventListener('click', function(e) {
+                    if (quickActionsMenu.classList.contains('open') && !quickActionsBtn.contains(e.target) && !quickActionsMenu.contains(e.target)) {
+                        quickActionsMenu.classList.remove('open');
+                        quickActionsBtn.style.transform = 'rotate(0deg)';
+                    }
+                });
+                
+                quickActionsMenu.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+            }
+        });
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('addProductModal');
+            if (event.target == modal) {
+                modal.classList.remove('active');
+            }
+        }
+        
+        // Refresh data every 2 seconds
+        setInterval(loadProducts, 2000);
+    </script>
+</body>
+</html>

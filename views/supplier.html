@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShopTrack - Supplier Management</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/supplier.css">
+    
+    <style>
+        .loading { text-align: center; padding: 2rem; color: var(--gray-500); }
+        .no-data { text-align: center; padding: 2rem; color: var(--gray-500); }
+        .supplier-card { transition: all 0.3s ease; }
+        .supplier-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); }
+        .status-badge { padding: 0.25rem 0.75rem; border-radius: 2rem; font-size: 0.75rem; font-weight: 500; display: inline-block; }
+        .status-badge.active { background: #d1fae5; color: #065f46; }
+        .status-badge.inactive { background: #fee2e2; color: #991b1b; }
+        .positive { color: var(--success); }
+        .negative { color: var(--danger); }
+        .action-btn { padding: 0.375rem 0.75rem; border-radius: 0.5rem; font-size: 0.8rem; border: 1px solid var(--gray-200); background: white; cursor: pointer; transition: all 0.2s; margin: 0 0.25rem; }
+        .action-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
+        .action-btn.delete:hover { background: var(--danger); border-color: var(--danger); }
+        .product-tag { display: inline-block; padding: 0.25rem 0.75rem; background: var(--gray-100); border-radius: 2rem; font-size: 0.75rem; margin: 0.25rem; cursor: pointer; }
+        .product-tag:hover { background: var(--primary-soft); }
+        .pagination { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 2rem; align-items: center; }
+        .page-btn { padding: 0.5rem 1rem; border: 1px solid var(--gray-200); background: white; border-radius: 0.5rem; cursor: pointer; transition: all 0.2s; min-width: 40px; }
+        .page-btn:hover:not(:disabled) { background: var(--primary); color: white; border-color: var(--primary); }
+        .page-btn.active { background: var(--gradient-primary); color: white; border-color: var(--primary); }
+        .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .filter-group select, .filter-group input { width: 100%; padding: 0.5rem; border: 1px solid var(--gray-200); border-radius: 0.5rem; background: white; }
+        
+        /* Product selection styles */
+        .product-selection-group {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--gray-200);
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+            background: white;
+        }
+        .product-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+        }
+        .product-checkbox:hover {
+            background: var(--gray-50);
+        }
+        .product-checkbox input {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+        }
+        .product-checkbox label {
+            flex: 1;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .product-checkbox .product-price {
+            font-size: 0.8rem;
+            color: var(--gray-500);
+        }
+        .selected-products {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        .selected-tag {
+            background: var(--primary-soft);
+            color: var(--primary);
+            padding: 0.25rem 0.75rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .selected-tag i {
+            cursor: pointer;
+            font-size: 0.7rem;
+        }
+        .selected-tag i:hover {
+            color: var(--danger);
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="/home" class="logo">
+                    <div class="logo-icon">ST</div>
+                    <span class="logo-text">ShopTrack</span>
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/home" class="nav-item"><i class="fas fa-home"></i><span>Dashboard</span></a>
+                <a href="/inventory" class="nav-item"><i class="fas fa-box"></i><span>Inventory</span><span class="badge" id="lowStockBadge">0</span></a>
+                <a href="/sales" class="nav-item"><i class="fas fa-shopping-cart"></i><span>Sales</span></a>
+                <a href="/suppliers" class="nav-item active"><i class="fas fa-truck"></i><span>Suppliers</span></a>
+                <a href="/expenses" class="nav-item"><i class="fas fa-wallet"></i><span>Expenses</span></a>
+                <a href="/reports" class="nav-item"><i class="fas fa-chart-bar"></i><span>Reports</span></a>
+                <a href="/settings" class="nav-item"><i class="fas fa-cog"></i><span>Settings</span></a>
+                <a href="/login" class="nav-item" style="margin-top: 2rem;" onclick="logout(); return false;"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-header">
+                <div class="header-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Search suppliers...">
+                </div>
+                <div class="header-actions">
+                    <button class="notification-btn"><i class="fas fa-bell"></i><span class="notification-badge">0</span></button>
+                    <a href="/settings" style="text-decoration: none;">
+                        <div class="user-menu">
+                            <div class="user-avatar" id="userAvatar">U</div>
+                            <div class="user-info">
+                                <span class="user-name" id="userName">Loading...</span>
+                                <span class="user-role" id="shopName">Loading...</span>
+                            </div>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                    </a>
+                </div>
+            </header>
+
+            <div class="page-header">
+                <div class="page-title">
+                    <h1>Supplier Management</h1>
+                    <p>Manage your suppliers, track orders, and maintain relationships</p>
+                </div>
+                <div class="header-actions">
+                    <div class="view-toggle">
+                        <button class="view-btn active" onclick="toggleView('grid')"><i class="fas fa-th-large"></i></button>
+                        <button class="view-btn" onclick="toggleView('table')"><i class="fas fa-list"></i></button>
+                    </div>
+                    <button class="btn btn-outline" onclick="exportSuppliers()"><i class="fas fa-download"></i> Export</button>
+                    <button class="btn btn-primary" onclick="openAddSupplierModal()"><i class="fas fa-plus"></i> Add Supplier</button>
+                </div>
+            </div>
+
+            <div class="supplier-stats">
+                <div class="stat-card"><div class="stat-icon"><i class="fas fa-truck"></i></div><div class="stat-content"><h3>Total Suppliers</h3><div class="stat-value" id="totalSuppliers">0</div><div class="stat-change positive" id="suppliersChange">Loading...</div></div></div>
+                <div class="stat-card"><div class="stat-icon"><i class="fas fa-box"></i></div><div class="stat-content"><h3>Products Supplied</h3><div class="stat-value" id="totalProductsSupplied">0</div><div class="stat-change positive">Across all suppliers</div></div></div>
+                <div class="stat-card"><div class="stat-icon"><i class="fas fa-clock"></i></div><div class="stat-content"><h3>Active Suppliers</h3><div class="stat-value" id="activeSuppliers">0</div><div class="stat-change">Active</div></div></div>
+                <div class="stat-card"><div class="stat-icon"><i class="fas fa-rupee-sign"></i></div><div class="stat-content"><h3>Monthly Purchase</h3><div class="stat-value" id="monthlyPurchase">₹0</div><div class="stat-change positive" id="purchaseChange">+0% vs last month</div></div></div>
+            </div>
+
+            <div class="filters-section">
+                <div class="filters-header">
+                    <div class="filters-title"><i class="fas fa-filter"></i> Filter Suppliers</div>
+                    <button class="btn btn-outline btn-sm" onclick="clearFilters()"><i class="fas fa-times"></i> Clear Filters</button>
+                </div>
+                <div class="filters-grid">
+                    <div class="filter-group"><label class="filter-label">Status</label><select class="filter-select" id="statusFilter" onchange="applyFilters()"><option value="">All Status</option><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+                    <div class="filter-group"><label class="filter-label">City</label><input type="text" id="cityFilter" class="filter-input" placeholder="City" onkeyup="applyFilters()"></div>
+                    <div class="filter-group"><label class="filter-label">Payment Terms</label><select class="filter-select" id="paymentFilter" onchange="applyFilters()"><option value="">All Terms</option><option value="cash">Cash</option><option value="credit7">7 Days Credit</option><option value="credit15">15 Days Credit</option><option value="credit30">30 Days Credit</option></select></div>
+                </div>
+                <div class="filter-actions"><button class="btn btn-primary" onclick="applyFilters()"><i class="fas fa-search"></i> Apply Filters</button></div>
+            </div>
+
+            <div id="gridView" class="suppliers-grid active"><div class="loading">Loading suppliers...</div></div>
+            <div id="tableView" class="supplier-table-container"><div class="loading">Loading suppliers...</div></div>
+
+            <div class="pagination" id="pagination">
+                <button class="page-btn" id="prevPage" onclick="changePage(-1)" disabled><i class="fas fa-chevron-left"></i></button>
+                <span id="pageInfo">Page 1</span>
+                <button class="page-btn" id="nextPage" onclick="changePage(1)"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </main>
+    </div>
+
+    <div class="quick-actions">
+        <button class="quick-actions-btn"><i class="fas fa-plus"></i></button>
+        <div class="quick-actions-menu">
+            <a href="#" class="quick-action-item" onclick="openAddSupplierModal()"><i class="fas fa-truck"></i><span>Add Supplier</span></a>
+            <a href="#" class="quick-action-item" onclick="exportSuppliers()"><i class="fas fa-download"></i><span>Export Suppliers</span></a>
+            <a href="#" class="quick-action-item" onclick="openBulkAddModal()"><i class="fas fa-layer-group"></i><span>Bulk Import</span></a>
+        </div>
+    </div>
+
+    <div id="addSupplierModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header"><h2>Add New Supplier</h2><button class="modal-close" onclick="closeAddSupplierModal()"><i class="fas fa-times"></i></button></div>
+            <form id="addSupplierForm" onsubmit="addSupplier(event)">
+                <div class="form-row"><label class="form-label">Supplier Name</label><input type="text" id="supplierName" class="form-control" placeholder="Enter supplier name" required></div>
+                <div class="form-row-half"><div><label class="form-label">Contact Person</label><input type="text" id="contactPerson" class="form-control" placeholder="Full name" required></div>
+                <div><label class="form-label">Phone Number</label><input type="tel" id="supplierPhone" class="form-control" placeholder="+91 98765 43210" required></div></div>
+                <div class="form-row"><label class="form-label">Email Address</label><input type="email" id="supplierEmail" class="form-control" placeholder="supplier@example.com" required></div>
+                <div class="form-row"><label class="form-label">Address</label><textarea id="supplierAddress" class="form-control" placeholder="Full address" rows="2" required></textarea></div>
+                <div class="form-row-half"><div><label class="form-label">City</label><input type="text" id="supplierCity" class="form-control" placeholder="City" required></div>
+                <div><label class="form-label">State</label><input type="text" id="supplierState" class="form-control" placeholder="State" required></div></div>
+                <div class="form-row-half"><div><label class="form-label">Payment Terms</label><select id="paymentTerms" class="form-control" required><option value="">Select Terms</option><option value="cash">Cash on Delivery</option><option value="credit7">7 Days Credit</option><option value="credit15">15 Days Credit</option><option value="credit30">30 Days Credit</option></select></div>
+                <div><label class="form-label">Status</label><select id="supplierStatus" class="form-control" required><option value="active">Active</option><option value="inactive">Inactive</option></select></div></div>
+                
+                <!-- Products Supplied Section -->
+                <div class="form-row">
+                    <label class="form-label">Products Supplied by this Supplier</label>
+                    <div id="productsList" class="product-selection-group">
+                        <div class="loading">Loading products...</div>
+                    </div>
+                    <div id="selectedProductsContainer" class="selected-products"></div>
+                    <input type="hidden" id="selectedProducts" value="">
+                </div>
+                
+                <div class="modal-footer"><button type="button" class="btn btn-outline" onclick="closeAddSupplierModal()">Cancel</button><button type="submit" class="btn btn-primary">Add Supplier</button></div>
+            </form>
+        </div>
+    </div>
+
+    <div id="editSupplierModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header"><h2>Edit Supplier</h2><button class="modal-close" onclick="closeEditSupplierModal()"><i class="fas fa-times"></i></button></div>
+            <form id="editSupplierForm" onsubmit="updateSupplier(event)">
+                <input type="hidden" id="editSupplierId">
+                <div class="form-row"><label class="form-label">Supplier Name</label><input type="text" id="editSupplierName" class="form-control" required></div>
+                <div class="form-row-half"><div><label class="form-label">Contact Person</label><input type="text" id="editContactPerson" class="form-control"></div>
+                <div><label class="form-label">Phone Number</label><input type="tel" id="editSupplierPhone" class="form-control"></div></div>
+                <div class="form-row"><label class="form-label">Email Address</label><input type="email" id="editSupplierEmail" class="form-control"></div>
+                <div class="form-row"><label class="form-label">Address</label><textarea id="editSupplierAddress" class="form-control" rows="2"></textarea></div>
+                <div class="form-row-half"><div><label class="form-label">City</label><input type="text" id="editSupplierCity" class="form-control"></div>
+                <div><label class="form-label">State</label><input type="text" id="editSupplierState" class="form-control"></div></div>
+                <div class="form-row-half"><div><label class="form-label">Payment Terms</label><select id="editPaymentTerms" class="form-control"><option value="cash">Cash</option><option value="credit7">7 Days Credit</option><option value="credit15">15 Days Credit</option><option value="credit30">30 Days Credit</option></select></div>
+                <div><label class="form-label">Status</label><select id="editSupplierStatus" class="form-control"><option value="active">Active</option><option value="inactive">Inactive</option></select></div></div>
+                
+                <!-- Products Supplied Section -->
+                <div class="form-row">
+                    <label class="form-label">Products Supplied by this Supplier</label>
+                    <div id="editProductsList" class="product-selection-group">
+                        <div class="loading">Loading products...</div>
+                    </div>
+                    <div id="editSelectedProductsContainer" class="selected-products"></div>
+                    <input type="hidden" id="editSelectedProducts" value="">
+                </div>
+                
+                <div class="modal-footer"><button type="button" class="btn btn-outline" onclick="closeEditSupplierModal()">Cancel</button><button type="submit" class="btn btn-primary">Update Supplier</button></div>
+            </form>
+        </div>
+    </div>
+
+  <script>
+    // Global variables
+    let token = localStorage.getItem('token');
+    if (!token) window.location.href = '/login';
+    
+    let allSuppliers = [];
+    let filteredSuppliers = [];
+    let allProducts = [];
+    let currentPage = 1;
+    const itemsPerPage = 6;
+    let currentView = 'grid';
+    let currentSelectedProducts = [];
+    let editSelectedProducts = [];
+    
+    // Helper functions
+    function getInitials(name) { return name ? name.substring(0, 2).toUpperCase() : 'U'; }
+    function escapeHtml(text) { if (!text) return ''; return text.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;'); }
+    
+   // Format number with Indian style (commas for thousands)
+function formatNumber(num) {
+    if (num === undefined || num === null || isNaN(num)) return '0';
+    let number = Number(num);
+    if (number === 0) return '0';
+    
+    // Indian number format with commas
+    let formatted = number.toLocaleString('en-IN');
+    return formatted;
+}
+
+function formatCurrency(num) {
+    return '₹' + formatNumber(num);
+}
+    
+    // Load user info
+    async function loadUserInfo() {
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (user) {
+            document.getElementById('userName').innerText = user.username;
+            document.getElementById('shopName').innerText = user.shop_name || 'Your Shop';
+            document.getElementById('userAvatar').innerText = getInitials(user.username);
+        }
+    }
+    
+    // Load products for selection
+    async function loadProducts() {
+        try {
+            const response = await fetch('/api/products', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+            if (data.success) {
+                allProducts = data.products;
+                renderProductList();
+                renderEditProductList();
+            }
+        } catch (error) {
+            console.error('Error loading products:', error);
+        }
+    }
+    
+    function renderProductList() {
+        const container = document.getElementById('productsList');
+        if (!allProducts.length) {
+            container.innerHTML = '<div class="no-data">No products found. Add products first.</div>';
+            return;
+        }
+        container.innerHTML = allProducts.map(product => `
+            <label class="product-checkbox">
+                <input type="checkbox" value="${product.id}" data-name="${escapeHtml(product.name)}" data-price="${product.selling_price}" onchange="toggleProductSelection(this)">
+                <div style="flex: 1">
+                    <div>${escapeHtml(product.name)}</div>
+                    <div class="product-price">₹${product.selling_price} | Stock: ${product.current_stock}</div>
+                </div>
+            </label>
+        `).join('');
+    }
+    
+    function renderEditProductList() {
+        const container = document.getElementById('editProductsList');
+        if (!allProducts.length) {
+            container.innerHTML = '<div class="no-data">No products found. Add products first.</div>';
+            return;
+        }
+        container.innerHTML = allProducts.map(product => `
+            <label class="product-checkbox">
+                <input type="checkbox" value="${product.id}" data-name="${escapeHtml(product.name)}" data-price="${product.selling_price}" onchange="toggleEditProductSelection(this)">
+                <div style="flex: 1">
+                    <div>${escapeHtml(product.name)}</div>
+                    <div class="product-price">₹${product.selling_price} | Stock: ${product.current_stock}</div>
+                </div>
+            </label>
+        `).join('');
+    }
+    
+    function toggleProductSelection(checkbox) {
+        const productId = parseInt(checkbox.value);
+        const productName = checkbox.getAttribute('data-name');
+        const productPrice = checkbox.getAttribute('data-price');
+        
+        if (checkbox.checked) {
+            if (!currentSelectedProducts.find(p => p.id === productId)) {
+                currentSelectedProducts.push({ id: productId, name: productName, price: productPrice });
+            }
+        } else {
+            currentSelectedProducts = currentSelectedProducts.filter(p => p.id !== productId);
+        }
+        updateSelectedProductsDisplay();
+    }
+    
+    function toggleEditProductSelection(checkbox) {
+        const productId = parseInt(checkbox.value);
+        const productName = checkbox.getAttribute('data-name');
+        const productPrice = checkbox.getAttribute('data-price');
+        
+        if (checkbox.checked) {
+            if (!editSelectedProducts.find(p => p.id === productId)) {
+                editSelectedProducts.push({ id: productId, name: productName, price: productPrice });
+            }
+        } else {
+            editSelectedProducts = editSelectedProducts.filter(p => p.id !== productId);
+        }
+        updateEditSelectedProductsDisplay();
+    }
+    
+    function updateSelectedProductsDisplay() {
+        const container = document.getElementById('selectedProductsContainer');
+        if (currentSelectedProducts.length === 0) {
+            container.innerHTML = '<span style="font-size: 0.8rem; color: var(--gray-500);">No products selected</span>';
+        } else {
+            container.innerHTML = currentSelectedProducts.map(p => `
+                <span class="selected-tag">
+                    ${escapeHtml(p.name)}
+                    <i class="fas fa-times" onclick="removeSelectedProduct(${p.id})"></i>
+                </span>
+            `).join('');
+        }
+        document.getElementById('selectedProducts').value = JSON.stringify(currentSelectedProducts);
+    }
+    
+    function updateEditSelectedProductsDisplay() {
+        const container = document.getElementById('editSelectedProductsContainer');
+        if (editSelectedProducts.length === 0) {
+            container.innerHTML = '<span style="font-size: 0.8rem; color: var(--gray-500);">No products selected</span>';
+        } else {
+            container.innerHTML = editSelectedProducts.map(p => `
+                <span class="selected-tag">
+                    ${escapeHtml(p.name)}
+                    <i class="fas fa-times" onclick="removeEditSelectedProduct(${p.id})"></i>
+                </span>
+            `).join('');
+        }
+        document.getElementById('editSelectedProducts').value = JSON.stringify(editSelectedProducts);
+    }
+    
+    function removeSelectedProduct(productId) {
+        currentSelectedProducts = currentSelectedProducts.filter(p => p.id !== productId);
+        const checkbox = document.querySelector(`#productsList input[value="${productId}"]`);
+        if (checkbox) checkbox.checked = false;
+        updateSelectedProductsDisplay();
+    }
+    
+    function removeEditSelectedProduct(productId) {
+        editSelectedProducts = editSelectedProducts.filter(p => p.id !== productId);
+        const checkbox = document.querySelector(`#editProductsList input[value="${productId}"]`);
+        if (checkbox) checkbox.checked = false;
+        updateEditSelectedProductsDisplay();
+    }
+    
+    // Load suppliers
+    async function loadSuppliers() {
+        try {
+            const response = await fetch('/api/suppliers', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                allSuppliers = data.suppliers;
+                updateStats();
+                applyFilters();
+            } else {
+                document.getElementById('gridView').innerHTML = '<div class="no-data">Failed to load suppliers</div>';
+                document.getElementById('tableView').innerHTML = '<div class="no-data">Failed to load suppliers</div>';
+            }
+        } catch (error) {
+            console.error('Error loading suppliers:', error);
+            document.getElementById('gridView').innerHTML = '<div class="no-data">Error loading suppliers</div>';
+            document.getElementById('tableView').innerHTML = '<div class="no-data">Error loading suppliers</div>';
+        }
+    }
+  // Calculate monthly purchase from products added this month
+async function calculateMonthlyPurchase() {
+    try {
+        const now = new Date();
+        const currentMonth = now.getMonth() + 1;
+        const currentYear = now.getFullYear();
+        
+        // Get all products
+        const response = await fetch('/api/products', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        
+        if (data.success && data.products) {
+            // Filter products added in current month
+            const currentMonthProducts = data.products.filter(product => {
+                const productDate = new Date(product.created_at);
+                return productDate.getMonth() + 1 === currentMonth && 
+                       productDate.getFullYear() === currentYear;
+            });
+            
+            // Calculate total purchase value (quantity × purchase price)
+            const totalPurchase = currentMonthProducts.reduce((sum, product) => {
+                const productValue = (product.purchase_price || 0) * (product.current_stock || 0);
+                return sum + productValue;
+            }, 0);
+            
+            return totalPurchase;
+        }
+        return 0;
+    } catch (error) {
+        console.error('Error calculating monthly purchase:', error);
+        return 0;
+    }
+}
+    // Update stats
+    async function updateStats() {
+        const total = allSuppliers.length;
+        const active = allSuppliers.filter(s => s.status === 'active').length;
+        let totalProducts = 0;
+        
+        allSuppliers.forEach(s => {
+            if (s.products) {
+                if (Array.isArray(s.products)) {
+                    totalProducts += s.products.length;
+                } else if (typeof s.products === 'string') {
+                    try {
+                        const parsed = JSON.parse(s.products);
+                        totalProducts += parsed.length;
+                    } catch(e) {}
+                }
+            }
+        });
+        
+        document.getElementById('totalSuppliers').innerText = total;
+        document.getElementById('activeSuppliers').innerText = active;
+        document.getElementById('totalProductsSupplied').innerText = totalProducts;
+        document.getElementById('suppliersChange').innerHTML = `${active} active, ${total - active} inactive`;
+        
+        const monthlyPurchase = await calculateMonthlyPurchase();
+        document.getElementById('monthlyPurchase').innerHTML = formatCurrency(monthlyPurchase);
+        document.getElementById('purchaseChange').innerHTML = `this month`;
+    }
+    
+    // Apply filters
+    function applyFilters() {
+        const status = document.getElementById('statusFilter').value;
+        const city = document.getElementById('cityFilter')?.value.toLowerCase() || '';
+        const payment = document.getElementById('paymentFilter').value;
+        const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
+        
+        filteredSuppliers = allSuppliers.filter(supplier => {
+            if (status && supplier.status !== status) return false;
+            if (city && !(supplier.city || '').toLowerCase().includes(city)) return false;
+            if (payment && supplier.payment_terms !== payment) return false;
+            if (searchTerm && !supplier.name.toLowerCase().includes(searchTerm) && 
+                !(supplier.contact_person || '').toLowerCase().includes(searchTerm)) return false;
+            return true;
+        });
+        
+        currentPage = 1;
+        renderView();
+    }
+    
+    function clearFilters() {
+        document.getElementById('statusFilter').value = '';
+        if (document.getElementById('cityFilter')) document.getElementById('cityFilter').value = '';
+        document.getElementById('paymentFilter').value = '';
+        if (document.getElementById('searchInput')) document.getElementById('searchInput').value = '';
+        applyFilters();
+    }
+    
+    function renderView() {
+        const start = (currentPage - 1) * itemsPerPage;
+        const paginated = filteredSuppliers.slice(start, start + itemsPerPage);
+        const totalPages = Math.ceil(filteredSuppliers.length / itemsPerPage);
+        
+        document.getElementById('pageInfo').innerText = `Page ${currentPage} of ${totalPages || 1}`;
+        document.getElementById('prevPage').disabled = currentPage === 1;
+        document.getElementById('nextPage').disabled = currentPage === totalPages || totalPages === 0;
+        
+        if (currentView === 'grid') {
+            renderGridView(paginated);
+        } else {
+            renderTableView(paginated);
+        }
+    }
+    
+    function getProductsArray(supplier) {
+        if (!supplier.products) return [];
+        if (Array.isArray(supplier.products)) return supplier.products;
+        if (typeof supplier.products === 'string') {
+            try {
+                return JSON.parse(supplier.products);
+            } catch(e) {
+                return [];
+            }
+        }
+        return [];
+    }
+    
+    function renderGridView(suppliers) {
+        const container = document.getElementById('gridView');
+        if (!suppliers.length) {
+            container.innerHTML = '<div class="no-data">No suppliers found</div>';
+            return;
+        }
+        
+        container.innerHTML = suppliers.map(s => {
+            const products = getProductsArray(s);
+            return `
+                <div class="supplier-card">
+                    <div class="supplier-header">
+                        <div class="supplier-info">
+                            <div class="supplier-avatar">${getInitials(s.name)}</div>
+                            <div class="supplier-name">
+                                <h4>${escapeHtml(s.name)}</h4>
+                                <p>ID: ${s.supplier_id || s.id}</p>
+                            </div>
+                        </div>
+                        <span class="supplier-badge ${s.status}">${s.status === 'active' ? 'Active' : 'Inactive'}</span>
+                    </div>
+                    <div class="supplier-details">
+                        <div class="detail-row"><i class="fas fa-user"></i><span>Contact: ${escapeHtml(s.contact_person || 'N/A')}</span></div>
+                        <div class="detail-row"><i class="fas fa-phone"></i><span>${s.phone || 'N/A'}</span></div>
+                        <div class="detail-row"><i class="fas fa-envelope"></i><span>${escapeHtml(s.email || 'N/A')}</span></div>
+                        <div class="detail-row"><i class="fas fa-map-marker-alt"></i><span>${escapeHtml(s.city || '')} ${s.state ? ', ' + s.state : ''}</span></div>
+                    </div>
+                    <div class="supplier-products">
+                        <div class="products-title">Products Supplied:</div>
+                        <div class="product-tags">
+                            ${products.length ? products.map(p => `<span class="product-tag">${escapeHtml(p.name)}</span>`).join('') : '<span class="product-tag">No products</span>'}
+                        </div>
+                    </div>
+                    <div class="supplier-footer">
+                        <div class="supplier-meta"><span><i class="fas fa-clock"></i> Since ${new Date(s.created_at).getFullYear()}</span></div>
+                        <div class="supplier-actions">
+                            <button class="action-btn" onclick="editSupplier(${s.id})"><i class="fas fa-edit"></i></button>
+                            <button class="action-btn delete" onclick="deleteSupplier(${s.id})"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    function renderTableView(suppliers) {
+        const container = document.getElementById('tableView');
+        if (!suppliers.length) {
+            container.innerHTML = '<div class="no-data">No suppliers found</div>';
+            return;
+        }
+        
+        container.innerHTML = `
+            <table class="supplier-table">
+                <thead>
+                    <tr>
+                        <th>Supplier</th>
+                        <th>Contact</th>
+                        <th>Phone</th>
+                        <th>Email</th>
+                        <th>City</th>
+                        <th>Products</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${suppliers.map(s => {
+                        const products = getProductsArray(s);
+                        return `
+                            <tr>
+                                <td><div><strong>${escapeHtml(s.name)}</strong><br><small>ID: ${s.supplier_id || s.id}</small></div></td>
+                                <td>${escapeHtml(s.contact_person || '-')}</td>
+                                <td>${s.phone || '-'}</td>
+                                <td>${escapeHtml(s.email || '-')}</td>
+                                <td>${escapeHtml(s.city || '-')}</td>
+                                <td>${products.map(p => `<span class="product-tag">${escapeHtml(p.name)}</span>`).join('') || '-'}</td>
+                                <td><span class="status-badge ${s.status}">${s.status === 'active' ? 'Active' : 'Inactive'}</span></td>
+                                <td>
+                                    <button class="action-btn" onclick="editSupplier(${s.id})"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn delete" onclick="deleteSupplier(${s.id})"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+    
+    function changePage(delta) {
+        const totalPages = Math.ceil(filteredSuppliers.length / itemsPerPage);
+        const newPage = currentPage + delta;
+        if (newPage >= 1 && newPage <= totalPages) {
+            currentPage = newPage;
+            renderView();
+        }
+    }
+    
+    function toggleView(view) {
+        currentView = view;
+        const gridView = document.getElementById('gridView');
+        const tableView = document.getElementById('tableView');
+        const viewBtns = document.querySelectorAll('.view-btn');
+        viewBtns.forEach(btn => btn.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+        
+        if (view === 'grid') {
+            gridView.classList.add('active');
+            tableView.classList.remove('active');
+        } else {
+            gridView.classList.remove('active');
+            tableView.classList.add('active');
+        }
+        renderView();
+    }
+    
+    // Add supplier
+    async function addSupplier(event) {
+        event.preventDefault();
+        const submitBtn = event.target.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+        submitBtn.disabled = true;
+        
+        const supplierData = {
+            name: document.getElementById('supplierName').value,
+            contact_person: document.getElementById('contactPerson').value,
+            phone: document.getElementById('supplierPhone').value,
+            email: document.getElementById('supplierEmail').value,
+            address: document.getElementById('supplierAddress').value,
+            city: document.getElementById('supplierCity').value,
+            state: document.getElementById('supplierState').value,
+            payment_terms: document.getElementById('paymentTerms').value,
+            status: document.getElementById('supplierStatus').value,
+            products: JSON.stringify(currentSelectedProducts)
+        };
+        
+        try {
+            const response = await fetch('/api/suppliers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(supplierData)
+            });
+            const data = await response.json();
+            if (data.success) {
+                alert('Supplier added successfully!');
+                closeAddSupplierModal();
+                document.getElementById('addSupplierForm').reset();
+                currentSelectedProducts = [];
+                loadSuppliers();
+            } else {
+                alert(data.message || 'Failed to add supplier');
+            }
+        } catch (error) {
+            console.error('Error adding supplier:', error);
+            alert('Server error. Please try again.');
+        } finally {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+    }
+    
+    // Edit supplier
+    async function editSupplier(id) {
+        const supplier = allSuppliers.find(s => s.id === id);
+        if (!supplier) return;
+        
+        document.getElementById('editSupplierId').value = supplier.id;
+        document.getElementById('editSupplierName').value = supplier.name || '';
+        document.getElementById('editContactPerson').value = supplier.contact_person || '';
+        document.getElementById('editSupplierPhone').value = supplier.phone || '';
+        document.getElementById('editSupplierEmail').value = supplier.email || '';
+        document.getElementById('editSupplierAddress').value = supplier.address || '';
+        document.getElementById('editSupplierCity').value = supplier.city || '';
+        document.getElementById('editSupplierState').value = supplier.state || '';
+        document.getElementById('editPaymentTerms').value = supplier.payment_terms || 'cash';
+        document.getElementById('editSupplierStatus').value = supplier.status || 'active';
+        
+        // Load existing products
+        editSelectedProducts = getProductsArray(supplier);
+        updateEditSelectedProductsDisplay();
+        
+        // Check checkboxes for existing products
+        setTimeout(() => {
+            document.querySelectorAll('#editProductsList input[type="checkbox"]').forEach(cb => {
+                if (editSelectedProducts.find(p => p.id === parseInt(cb.value))) {
+                    cb.checked = true;
+                }
+            });
+        }, 100);
+        
+        document.getElementById('editSupplierModal').classList.add('active');
+    }
+    
+    async function updateSupplier(event) {
+        event.preventDefault();
+        const id = document.getElementById('editSupplierId').value;
+        const submitBtn = event.target.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+        submitBtn.disabled = true;
+        
+        const supplierData = {
+            name: document.getElementById('editSupplierName').value,
+            contact_person: document.getElementById('editContactPerson').value,
+            phone: document.getElementById('editSupplierPhone').value,
+            email: document.getElementById('editSupplierEmail').value,
+            address: document.getElementById('editSupplierAddress').value,
+            city: document.getElementById('editSupplierCity').value,
+            state: document.getElementById('editSupplierState').value,
+            payment_terms: document.getElementById('editPaymentTerms').value,
+            status: document.getElementById('editSupplierStatus').value,
+            products: JSON.stringify(editSelectedProducts)
+        };
+        
+        try {
+            const response = await fetch(`/api/suppliers/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(supplierData)
+            });
+            const data = await response.json();
+            if (data.success) {
+                alert('Supplier updated successfully!');
+                closeEditSupplierModal();
+                loadSuppliers();
+            } else {
+                alert(data.message || 'Failed to update supplier');
+            }
+        } catch (error) {
+            console.error('Error updating supplier:', error);
+            alert('Server error. Please try again.');
+        } finally {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+    }
+    
+    // Delete supplier
+    async function deleteSupplier(id) {
+        const supplier = allSuppliers.find(s => s.id === id);
+        if (!confirm(`Are you sure you want to delete supplier "${supplier?.name}"? This action cannot be undone.`)) return;
+        
+        try {
+            const response = await fetch(`/api/suppliers/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+            if (data.success) {
+                alert('Supplier deleted successfully!');
+                loadSuppliers();
+            } else {
+                alert(data.message || 'Failed to delete supplier');
+            }
+        } catch (error) {
+            console.error('Error deleting supplier:', error);
+            alert('Server error. Please try again.');
+        }
+    }
+    
+    // Modal functions
+    function openAddSupplierModal() { 
+        currentSelectedProducts = [];
+        updateSelectedProductsDisplay();
+        document.getElementById('addSupplierModal').classList.add('active'); 
+    }
+    function closeAddSupplierModal() { 
+        document.getElementById('addSupplierModal').classList.remove('active'); 
+        document.getElementById('addSupplierForm').reset();
+        currentSelectedProducts = [];
+    }
+    function closeEditSupplierModal() { 
+        document.getElementById('editSupplierModal').classList.remove('active'); 
+    }
+    
+    // Export function
+    function exportSuppliers() {
+        if (!filteredSuppliers.length) { alert('No suppliers to export'); return; }
+        const exportData = filteredSuppliers.map(s => ({
+            'Supplier Name': s.name,
+            'Contact Person': s.contact_person || '',
+            'Phone': s.phone || '',
+            'Email': s.email || '',
+            'Address': s.address || '',
+            'City': s.city || '',
+            'State': s.state || '',
+            'Payment Terms': s.payment_terms === 'cash' ? 'Cash' : s.payment_terms === 'credit7' ? '7 Days' : s.payment_terms === 'credit15' ? '15 Days' : '30 Days',
+            'Status': s.status === 'active' ? 'Active' : 'Inactive',
+            'Added On': new Date(s.created_at).toLocaleDateString()
+        }));
+        const headers = Object.keys(exportData[0]);
+        const csvRows = [headers.join(',')];
+        for (const row of exportData) {
+            const values = headers.map(h => { let v = row[h]; if (typeof v === 'string' && (v.includes(',') || v.includes('"'))) v = `"${v.replace(/"/g, '""')}"`; return v; });
+            csvRows.push(values.join(','));
+        }
+        const csvContent = '\uFEFF' + csvRows.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `suppliers_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        alert(`Exported ${filteredSuppliers.length} suppliers!`);
+    }
+    
+    function openBulkAddModal() { alert('Bulk import feature: Upload CSV file with supplier list'); }
+    function logout() { localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href = '/login'; }
+    
+    // Event listeners
+    document.getElementById('searchInput')?.addEventListener('keyup', () => applyFilters());
+    window.onclick = e => { if (e.target.classList.contains('modal')) e.target.classList.remove('active'); };
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        loadUserInfo();
+        loadProducts();
+        loadSuppliers();
+        
+        const qaBtn = document.querySelector('.quick-actions-btn');
+        const qaMenu = document.querySelector('.quick-actions-menu');
+        if (qaBtn && qaMenu) {
+            qaBtn.addEventListener('click', e => { e.stopPropagation(); qaMenu.classList.toggle('open'); qaBtn.style.transform = qaMenu.classList.contains('open') ? 'rotate(45deg)' : 'rotate(0deg)'; });
+            document.addEventListener('click', e => { if (qaMenu.classList.contains('open') && !qaBtn.contains(e.target) && !qaMenu.contains(e.target)) { qaMenu.classList.remove('open'); qaBtn.style.transform = 'rotate(0deg)'; } });
+            qaMenu.addEventListener('click', e => e.stopPropagation());
+        }
+    });
+    
+    setInterval(() => loadSuppliers(), 30000);
+</script>
+</body>
+</html>

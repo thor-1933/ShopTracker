@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShopTrack - Smart Inventory & Sales Tracker for Shopkeepers</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- AOS Animation -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/landing.css">
+    
+    <style>
+        /* Additional styles for toast animations */
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        @keyframes slideDown {
+            from { opacity: 1; transform: translateX(-50%) translateY(0); }
+            to { opacity: 0; transform: translateX(-50%) translateY(20px); }
+        }
+        .plan-toast {
+            animation: slideUp 0.3s ease;
+        }
+        .plan-toast.hide {
+            animation: slideDown 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo">
+                <div class="logo-icon">ST</div>
+                <span class="logo-text">ShopTrack</span>
+            </div>
+            
+            <div class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#pricing">Pricing</a>
+                <a href="#testimonials">Testimonials</a>
+                <a href="#about">About</a>
+            </div>
+            
+            <div class="nav-buttons">
+                <a href="/login" class="btn btn-outline">Log In</a>
+                <a href="/login" class="btn btn-primary">Start Free Trial</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-bg"></div>
+        <div class="container">
+            <div class="hero-content" data-aos="fade-up">
+                <span class="hero-badge">
+                    <i class="fas fa-rocket"></i>
+                    Trusted by <span id="activeShopsCount">10,000+</span> Shopkeepers
+                </span>
+                
+                <h1 class="hero-title">
+                    Run Your Shop
+                    <span class="gradient-text">Smarter & Faster</span>
+                </h1>
+                
+                <p class="hero-description">
+                    The all-in-one inventory, sales, and profit tracking system designed for small shopkeepers. No complexity, just results.
+                </p>
+                
+                <div class="hero-cta">
+                    <a href="/login" class="btn btn-primary btn-large">
+                        <i class="fas fa-play"></i>
+                        Start Free Trial
+                    </a>
+                    <a href="#demo" class="btn btn-outline btn-large">
+                        <i class="fas fa-play-circle"></i>
+                        Watch Demo
+                    </a>
+                </div>
+                
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <span class="stat-number" id="totalUsers">0</span>
+                        <span class="stat-label">Active Shops</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="totalSales">0</span>
+                        <span class="stat-label">Sales Tracked</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="totalRating">4.9</span>
+                        <span class="stat-label">★ User Rating</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="hero-image" data-aos="fade-left" data-aos-delay="200">
+                <img src="https://via.placeholder.com/600x400" alt="ShopTrack Dashboard">
+                
+                <div class="floating-card">
+                    <div class="floating-card-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="floating-card-content">
+                        <span class="floating-card-value" id="profitChange">+23.5%</span>
+                        <span class="floating-card-label">Avg. Profit Growth</span>
+                    </div>
+                </div>
+                
+                <div class="floating-card-2">
+                    <div class="floating-card-icon">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <div class="floating-card-content">
+                        <span class="floating-card-value" id="lowStockCount">0</span>
+                        <span class="floating-card-label">Low Stock Products</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Trusted By Section -->
+    <section class="trusted-by">
+        <div class="container">
+            <h3>Trusted by shopkeepers across India</h3>
+            <div class="logo-cloud">
+                <span class="logo-cloud-item">Delhi General Store</span>
+                <span class="logo-cloud-item">Mumbai Provisions</span>
+                <span class="logo-cloud-item">Bangalore Mart</span>
+                <span class="logo-cloud-item">Chennai Supermarket</span>
+                <span class="logo-cloud-item">Pune Kirana</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <div class="section-header" data-aos="fade-up">
+                <span class="section-subtitle">Everything You Need</span>
+                <h2 class="section-title">Powerful Features, <span class="gradient-text">Simple Interface</span></h2>
+                <p class="section-description">No training required. Start tracking your shop in minutes.</p>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-card" data-aos="fade-up" data-aos-delay="100">
+                    <div class="feature-icon"><i class="fas fa-barcode"></i></div>
+                    <h3>Barcode Scanner Ready</h3>
+                    <p>Plug any USB barcode scanner and start billing instantly. Works with all standard scanners.</p>
+                </div>
+                <div class="feature-card" data-aos="fade-up" data-aos-delay="200">
+                    <div class="feature-icon"><i class="fas fa-chart-pie"></i></div>
+                    <h3>Profit Analytics</h3>
+                    <p>Know exactly how much profit you made today, this week, and this month. Product-wise profit tracking.</p>
+                </div>
+                <div class="feature-card" data-aos="fade-up" data-aos-delay="300">
+                    <div class="feature-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                    <h3>Smart Stock Alerts</h3>
+                    <p>Get notified when products run low. Never lose a sale due to out-of-stock items.</p>
+                </div>
+                <div class="feature-card" data-aos="fade-up" data-aos-delay="400">
+                    <div class="feature-icon"><i class="fas fa-truck"></i></div>
+                    <h3>Supplier Management</h3>
+                    <p>Track all your suppliers, their products, and contact details in one place.</p>
+                </div>
+                <div class="feature-card" data-aos="fade-up" data-aos-delay="500">
+                    <div class="feature-icon"><i class="fas fa-wallet"></i></div>
+                    <h3>Expense Tracker</h3>
+                    <p>Track rent, electricity, salaries, and all shop expenses. Know your true profit.</p>
+                </div>
+                <div class="feature-card" data-aos="fade-up" data-aos-delay="600">
+                    <div class="feature-icon"><i class="fas fa-file-export"></i></div>
+                    <h3>Export Reports</h3>
+                    <p>Generate and download daily sales reports, profit statements, and expense summaries.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- USP Section -->
+    <section class="usp">
+        <div class="container">
+            <div class="usp-grid">
+                <div class="usp-content" data-aos="fade-right">
+                    <span class="section-subtitle">Why ShopTrack?</span>
+                    <h2 class="section-title">Built for <span class="gradient-text">Real Shopkeepers</span></h2>
+                    
+                    <div class="usp-list">
+                        <div class="usp-item"><div class="usp-check"><i class="fas fa-check"></i></div><div class="usp-text"><h4>Works with or without internet</h4><p>Continue billing even when internet is down. Auto-syncs when connected.</p></div></div>
+                        <div class="usp-item"><div class="usp-check"><i class="fas fa-check"></i></div><div class="usp-text"><h4>No training needed</h4><p>If you can use WhatsApp, you can use ShopTrack. Simple and intuitive.</p></div></div>
+                        <div class="usp-item"><div class="usp-check"><i class="fas fa-check"></i></div><div class="usp-text"><h4>Works on any device</h4><p>Use on laptop, tablet, or phone. Even works with basic feature phones.</p></div></div>
+                        <div class="usp-item"><div class="usp-check"><i class="fas fa-check"></i></div><div class="usp-text"><h4>24/7 Support</h4><p>Call, WhatsApp, or email. We're always here to help.</p></div></div>
+                    </div>
+                </div>
+            
+                <div class="usp-image" data-aos="fade-left">
+                    <img src="https://via.placeholder.com/500x600" alt="Shop owner using ShopTrack">
+                    <div class="usp-stats">
+                        <div class="usp-stat"><div class="usp-stat-value">2 min</div><div class="usp-stat-label">Setup time</div></div>
+                        <div class="usp-stat"><div class="usp-stat-value">₹0</div><div class="usp-stat-label">Hidden costs</div></div>
+                        <div class="usp-stat"><div class="usp-stat-value no-counter">24/7</div><div class="usp-stat-label">Support</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Section -->
+    <section id="demo" class="demo">
+        <div class="container">
+            <div class="demo-grid">
+                <div class="demo-video" data-aos="fade-right">
+                    <img src="https://via.placeholder.com/600x400" alt="ShopTrack Demo">
+                    <div class="play-button"><i class="fas fa-play"></i></div>
+                </div>
+                <div class="demo-content" data-aos="fade-left">
+                    <span class="section-subtitle">See It In Action</span>
+                    <h2 class="section-title">Watch How ShopTrack <span class="gradient-text">Simplifies Your Day</span></h2>
+                    <p class="section-description">See how easy it is to bill customers, track inventory, and know your profit - all in under 2 minutes.</p>
+                    <div class="demo-features">
+                        <div class="demo-feature"><i class="fas fa-check-circle"></i><span>Scan & bill in seconds</span></div>
+                        <div class="demo-feature"><i class="fas fa-check-circle"></i><span>Auto stock update</span></div>
+                        <div class="demo-feature"><i class="fas fa-check-circle"></i><span>Real-time profit</span></div>
+                        <div class="demo-feature"><i class="fas fa-check-circle"></i><span>Low stock alerts</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="pricing">
+        <div class="container">
+            <div class="section-header" data-aos="fade-up">
+                <span class="section-subtitle">Simple Pricing</span>
+                <h2 class="section-title">Plans That <span class="gradient-text">Grow With You</span></h2>
+                <p class="section-description">Start free. Upgrade when you need more.</p>
+            </div>
+            
+            <div class="pricing-grid">
+                <!-- Basic Plan -->
+                <div class="pricing-card basic-plan" data-plan="basic">
+                    <div class="pricing-header">
+                        <h3 class="pricing-name">Basic</h3>
+                        <div class="pricing-price">
+                            ₹0 <span>/month</span>
+                        </div>
+                    </div>
+                    
+                    <ul class="pricing-features">
+                        <li><i class="fas fa-check"></i> Up to 500 products</li>
+                        <li><i class="fas fa-check"></i> Basic inventory tracking</li>
+                        <li><i class="fas fa-check"></i> Sales recording</li>
+                        <li><i class="fas fa-check"></i> Daily sales report</li>
+                        <li class="disabled"><i class="fas fa-times"></i> Barcode scanner</li>
+                        <li class="disabled"><i class="fas fa-times"></i> Expense tracking</li>
+                    </ul>
+                    
+                    <a href="/login" class="pricing-btn btn-outline">Start Free</a>
+                </div>
+                
+                <!-- Pro Plan - Popular -->
+                <div class="pricing-card popular pro-plan" data-plan="pro">
+                    <div class="popular-badge">MOST POPULAR</div>
+                    <div class="pricing-header">
+                        <h3 class="pricing-name">Pro</h3>
+                        <div class="pricing-price">
+                            ₹499 <span>/month</span>
+                        </div>
+                    </div>
+                    
+                    <ul class="pricing-features">
+                        <li><i class="fas fa-check"></i> Unlimited products</li>
+                        <li><i class="fas fa-check"></i> Advanced inventory</li>
+                        <li><i class="fas fa-check"></i> Barcode scanner support</li>
+                        <li><i class="fas fa-check"></i> Profit analytics</li>
+                        <li><i class="fas fa-check"></i> Expense tracking</li>
+                        <li><i class="fas fa-check"></i> Export reports</li>
+                    </ul>
+                    
+                    <a href="/login" class="pricing-btn btn-primary">Start 14-Day Trial</a>
+                </div>
+                
+                <!-- Business Plan -->
+                <div class="pricing-card business-plan" data-plan="business">
+                    <div class="pricing-header">
+                        <h3 class="pricing-name">Business</h3>
+                        <div class="pricing-price">
+                            ₹999 <span>/month</span>
+                        </div>
+                    </div>
+                    
+                    <ul class="pricing-features">
+                        <li><i class="fas fa-check"></i> Everything in Pro</li>
+                        <li><i class="fas fa-check"></i> Multi-shop support</li>
+                        <li><i class="fas fa-check"></i> Staff accounts</li>
+                        <li><i class="fas fa-check"></i> Advanced analytics</li>
+                        <li><i class="fas fa-check"></i> Priority support</li>
+                        <li><i class="fas fa-check"></i> API access</li>
+                    </ul>
+                    
+                    <a href="/login" class="pricing-btn btn-outline">Contact Sales</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section id="testimonials" class="testimonials">
+        <div class="container">
+            <div class="section-header" data-aos="fade-up">
+                <span class="section-subtitle">Happy Shopkeepers</span>
+                <h2 class="section-title">Trusted by <span class="gradient-text">Thousands</span></h2>
+                <p class="section-description">See what shopkeepers like you say about ShopTrack.</p>
+            </div>
+            
+            <div class="testimonials-grid">
+                <div class="testimonial-card" data-aos="fade-up" data-aos-delay="100">
+                    <div class="testimonial-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                    <p class="testimonial-text">"Earlier I used to spend 2 hours daily on accounts. Now with ShopTrack, I know my profit in 2 minutes. Best decision for my shop!"</p>
+                    <div class="testimonial-author"><div class="author-avatar">RP</div><div class="author-info"><h4>Ramesh Patel</h4><p>Patel General Store, Ahmedabad</p></div></div>
+                </div>
+                <div class="testimonial-card" data-aos="fade-up" data-aos-delay="200">
+                    <div class="testimonial-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                    <p class="testimonial-text">"The barcode scanner feature is a lifesaver! Billing is 10x faster now. My customers love how quick the checkout is."</p>
+                    <div class="testimonial-author"><div class="author-avatar">SK</div><div class="author-info"><h4>Sunita Kumari</h4><p>Sunita Kirana, Delhi</p></div></div>
+                </div>
+                <div class="testimonial-card" data-aos="fade-up" data-aos-delay="300">
+                    <div class="testimonial-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                    <p class="testimonial-text">"The expense tracker showed me I was spending too much on electricity. Now I save ₹2000 every month. Thank you ShopTrack!"</p>
+                    <div class="testimonial-author"><div class="author-avatar">MJ</div><div class="author-info"><h4>Mohan Joshi</h4><p>Joshi Provisions, Pune</p></div></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="container">
+            <div class="cta-content" data-aos="fade-up">
+                <h2 class="cta-title">Start Your <span class="gradient-text">Free Trial</span> Today</h2>
+                <p class="cta-description">Join <span id="ctaUsersCount">10,000+</span> shopkeepers who transformed their business with ShopTrack. No credit card required.</p>
+                <div class="cta-buttons">
+                    <a href="/login" class="btn btn-primary btn-large"><i class="fas fa-rocket"></i> Get Started Free</a>
+                    <a href="/contact" class="btn btn-outline btn-large"><i class="fas fa-headset"></i> Talk to Sales</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="logo"><div class="logo-icon">ST</div><span class="logo-text">ShopTrack</span></div>
+                    <p>Making shopkeeping simple, profitable, and stress-free for small shopkeepers across India.</p>
+                </div>
+                <div class="footer-links"><h4>Product</h4><ul><li><a href="#features">Features</a></li><li><a href="#pricing">Pricing</a></li><li><a href="#demo">Demo</a></li><li><a href="#testimonials">Testimonials</a></li></ul></div>
+                <div class="footer-links"><h4>Company</h4><ul><li><a href="#">About Us</a></li><li><a href="#">Blog</a></li><li><a href="#">Careers</a></li><li><a href="#">Contact</a></li></ul></div>
+                <div class="footer-links"><h4>Support</h4><ul><li><a href="#">Help Center</a></li><li><a href="#">FAQs</a></li><li><a href="#">Privacy Policy</a></li><li><a href="#">Terms of Service</a></li></ul></div>
+            </div>
+            <div class="footer-bottom">
+                <div>© 2024 ShopTrack. All rights reserved.</div>
+                <div class="social-links"><a href="#"><i class="fab fa-facebook"></i></a><a href="#"><i class="fab fa-twitter"></i></a><a href="#"><i class="fab fa-instagram"></i></a><a href="#"><i class="fab fa-youtube"></i></a></div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        // Initialize AOS
+        AOS.init({ duration: 800, once: true, offset: 100 });
+
+        // Counter animation function
+        function animateCounter(element, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                element.innerText = Math.floor(progress * (end - start) + start);
+                if (progress < 1) window.requestAnimationFrame(step);
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        // Format number with Indian style
+        function formatIndianNumber(num) {
+            if (num >= 10000000) return (num / 10000000).toFixed(1) + 'Cr';
+            if (num >= 100000) return (num / 100000).toFixed(1) + 'L';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toString();
+        }
+
+        // Pricing Card Selection Effect
+        let currentSelectedPlan = 'pro';
+
+        function selectPlan(plan) {
+            // Remove selected class from ALL cards
+            document.querySelectorAll('.pricing-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Add selected class to the clicked card
+            const selectedCard = document.querySelector(`.pricing-card[data-plan="${plan}"]`);
+            if (selectedCard) {
+                selectedCard.classList.add('selected');
+                currentSelectedPlan = plan;
+                console.log(`Selected plan: ${plan}`);
+                showPlanToast(plan);
+            }
+        }
+
+        function showPlanToast(plan) {
+            // Remove existing toast
+            const existingToast = document.querySelector('.plan-toast');
+            if (existingToast) existingToast.remove();
+            
+            // Create toast
+            const toast = document.createElement('div');
+            toast.className = 'plan-toast';
+            toast.style.position = 'fixed';
+            toast.style.bottom = '2rem';
+            toast.style.left = '50%';
+            toast.style.transform = 'translateX(-50%)';
+            toast.style.background = plan === 'basic' ? 'linear-gradient(135deg, #10b981, #059669)' : 
+                                    plan === 'pro' ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : 
+                                    'linear-gradient(135deg, #8b5cf6, #7c3aed)';
+            toast.style.color = 'white';
+            toast.style.padding = '0.75rem 1.5rem';
+            toast.style.borderRadius = '2rem';
+            toast.style.display = 'flex';
+            toast.style.alignItems = 'center';
+            toast.style.gap = '0.75rem';
+            toast.style.fontWeight = '500';
+            toast.style.boxShadow = '0 10px 25px -5px rgba(0,0,0,0.2)';
+            toast.style.zIndex = '1000';
+            toast.style.fontFamily = "'Inter', sans-serif";
+            toast.innerHTML = `
+                <i class="fas ${plan === 'basic' ? 'fa-gem' : plan === 'pro' ? 'fa-crown' : 'fa-building'}"></i>
+                <span>${plan === 'basic' ? 'Basic' : plan === 'pro' ? 'Pro' : 'Business'} Plan Selected</span>
+                <small style="margin-left: 0.5rem; opacity: 0.8;">Click "Start Free Trial" to proceed</small>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideDown 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Load real-time stats
+        async function loadStats() {
+            try {
+                const usersRes = await fetch('/api/auth/users/count');
+                const usersData = await usersRes.json();
+                const totalUsers = usersData.count || 0;
+                
+                const salesRes = await fetch('/api/sales/total');
+                const salesData = await salesRes.json();
+                const totalSalesCount = salesData.total_sales || 0;
+                
+                const productsRes = await fetch('/api/products');
+                const productsData = await productsRes.json();
+                const lowStock = (productsData.products || []).filter(p => p.current_stock <= p.min_stock && p.current_stock > 0).length;
+                
+                const usersElement = document.getElementById('totalUsers');
+                const salesElement = document.getElementById('totalSales');
+                const lowStockElement = document.getElementById('lowStockCount');
+                const activeShopsSpan = document.getElementById('activeShopsCount');
+                const ctaUsersSpan = document.getElementById('ctaUsersCount');
+                
+                if (usersElement) {
+                    const formattedUsers = formatIndianNumber(totalUsers);
+                    usersElement.innerText = formattedUsers;
+                    if (activeShopsSpan) activeShopsSpan.innerText = formattedUsers;
+                    if (ctaUsersSpan) ctaUsersSpan.innerText = formattedUsers;
+                }
+                
+                if (salesElement) {
+                    const formattedSales = formatIndianNumber(totalSalesCount);
+                    salesElement.innerText = formattedSales;
+                }
+                
+                if (lowStockElement) lowStockElement.innerText = lowStock;
+                
+                console.log('Stats loaded:', { totalUsers, totalSalesCount, lowStock });
+            } catch (error) {
+                console.error('Error loading stats:', error);
+                document.getElementById('totalUsers').innerText = '0';
+                document.getElementById('totalSales').innerText = '0';
+                document.getElementById('lowStockCount').innerText = '0';
+            }
+        }
+
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 50) {
+                navbar.style.background = 'rgba(255, 255, 255, 0.95)';
+                navbar.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.1)';
+            } else {
+                navbar.style.background = 'rgba(255, 255, 255, 0.8)';
+                navbar.style.boxShadow = 'none';
+            }
+        });
+        
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
+        
+        // Play demo video
+        document.querySelector('.play-button')?.addEventListener('click', () => {
+            alert('Demo video would play here - showing ShopTrack in action!');
+        });
+        
+        // Pricing card hover - remove transform on popular card
+        document.querySelectorAll('.pricing-card').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-5px)';
+            });
+            card.addEventListener('mouseleave', () => {
+                if (!card.classList.contains('selected')) {
+                    card.style.transform = 'translateY(0)';
+                } else {
+                    card.style.transform = 'scale(1.02)';
+                }
+            });
+        });
+        
+        // Add click handlers to pricing cards
+        document.querySelectorAll('.pricing-card').forEach(card => {
+            card.addEventListener('click', (e) => {
+                // Don't trigger if clicking on the button
+                if (e.target.closest('.pricing-btn')) return;
+                const plan = card.getAttribute('data-plan');
+                if (plan) selectPlan(plan);
+            });
+        });
+        
+        // Set default selected plan (Pro)
+        document.querySelectorAll('.pricing-card').forEach(card => {
+            card.classList.remove('selected');
+        });
+        const proCard = document.querySelector('.pricing-card[data-plan="pro"]');
+        if (proCard) {
+            proCard.classList.add('selected');
+        }
+        
+        // Prevent card selection when clicking on buttons
+        document.querySelectorAll('.pricing-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+        });
+        
+        loadStats();
+        setInterval(loadStats, 30000);
+    </script>
+</body>
+</html>
