@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShopTrack - Expense Management</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/expense.css">
+    
+    <style>
+        .loading { text-align: center; padding: 2rem; color: var(--gray-500); }
+        .no-data { text-align: center; padding: 2rem; color: var(--gray-500); }
+        .positive { color: var(--success); }
+        .negative { color: var(--danger); }
+        .status-badge { padding: 0.25rem 0.75rem; border-radius: 2rem; font-size: 0.75rem; font-weight: 500; display: inline-block; }
+        .status-badge.paid { background: #d1fae5; color: #065f46; }
+        .status-badge.pending { background: #fed7aa; color: #92400e; }
+        .action-btn { padding: 0.375rem 0.75rem; border-radius: 0.5rem; font-size: 0.8rem; border: 1px solid var(--gray-200); background: white; cursor: pointer; transition: all 0.2s; margin: 0 0.25rem; }
+        .action-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
+        .action-btn.delete:hover { background: var(--danger); border-color: var(--danger); }
+        .category-badge, .payment-badge { padding: 0.25rem 0.75rem; border-radius: 2rem; font-size: 0.7rem; font-weight: 500; display: inline-block; }
+        .category-badge.rent { background: #d1fae5; color: #065f46; }
+        .category-badge.electricity { background: #fed7aa; color: #92400e; }
+        .category-badge.salary { background: #e0e7ff; color: #3730a3; }
+        .category-badge.maintenance { background: #fae8ff; color: #a21caf; }
+        .category-badge.internet { background: #cffafe; color: #0891b2; }
+        .category-badge.water { background: #ccfbf1; color: #115e59; }
+        .category-badge.transport { background: #fef3c7; color: #92400e; }
+        .category-badge.other { background: #f1f5f9; color: #334155; }
+        .payment-badge.cash { background: #f1f5f9; color: #334155; }
+        .payment-badge.card { background: #e0e7ff; color: #3730a3; }
+        .payment-badge.upi { background: #d1fae5; color: #065f46; }
+        .payment-badge.bank { background: #fed7aa; color: #92400e; }
+        .pagination { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 2rem; align-items: center; }
+        .page-btn { padding: 0.5rem 1rem; border: 1px solid var(--gray-200); background: white; border-radius: 0.5rem; cursor: pointer; transition: all 0.2s; min-width: 40px; }
+        .page-btn:hover:not(:disabled) { background: var(--primary); color: white; border-color: var(--primary); }
+        .page-btn.active { background: var(--gradient-primary); color: white; border-color: var(--primary); }
+        .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .filter-group select, .filter-group input { width: 100%; padding: 0.5rem; border: 1px solid var(--gray-200); border-radius: 0.5rem; background: white; }
+        .quick-actions { position: fixed; bottom: 2rem; right: 2rem; z-index: 1000; }
+        .quick-actions-btn { width: 60px; height: 60px; background: var(--gradient-primary); border: none; border-radius: 50%; color: white; font-size: 1.5rem; cursor: pointer; box-shadow: var(--shadow-lg); transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; }
+        .quick-actions-btn:hover { transform: scale(1.1); }
+        .quick-actions-menu { position: absolute; bottom: 80px; right: 0; background: white; border-radius: 1rem; padding: 0.5rem; box-shadow: var(--shadow-xl); min-width: 200px; border: 1px solid var(--gray-200); opacity: 0; visibility: hidden; transform: translateY(10px); transition: all 0.25s ease; pointer-events: none; }
+        .quick-actions-menu.open { opacity: 1; visibility: visible; transform: translateY(0); pointer-events: auto; }
+        .quick-action-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; color: var(--gray-700); text-decoration: none; border-radius: 0.5rem; transition: all 0.2s; cursor: pointer; }
+        .quick-action-item:hover { background: var(--gray-50); color: var(--primary); }
+        .quick-action-item i { width: 20px; color: var(--primary); }
+        
+        /* Category Management Modal Styles */
+        .category-manager {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .category-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--gray-100);
+        }
+        .category-item:last-child { border-bottom: none; }
+        .category-info { display: flex; align-items: center; gap: 1rem; flex: 1; }
+        .category-icon { width: 40px; height: 40px; background: var(--primary-soft); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--primary); }
+        .category-details h4 { font-size: 1rem; margin-bottom: 0.25rem; }
+        .category-details p { font-size: 0.8rem; color: var(--gray-500); }
+        .category-budget { font-weight: 600; color: var(--gray-700); min-width: 100px; text-align: right; }
+        .edit-category-btn, .delete-category-btn { background: none; border: none; cursor: pointer; padding: 0.25rem; margin-left: 0.5rem; color: var(--gray-500); }
+        .edit-category-btn:hover { color: var(--primary); }
+        .delete-category-btn:hover { color: var(--danger); }
+        .add-category-btn { width: 100%; margin-top: 1rem; }
+        .budget-input { width: 100px; padding: 0.25rem; border: 1px solid var(--gray-200); border-radius: 0.25rem; }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="/home" class="logo">
+                    <div class="logo-icon">ST</div>
+                    <span class="logo-text">ShopTrack</span>
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/home" class="nav-item"><i class="fas fa-home"></i><span>Dashboard</span></a>
+                <a href="/inventory" class="nav-item"><i class="fas fa-box"></i><span>Inventory</span><span class="badge" id="lowStockBadge">0</span></a>
+                <a href="/sales" class="nav-item"><i class="fas fa-shopping-cart"></i><span>Sales</span></a>
+                <a href="/suppliers" class="nav-item"><i class="fas fa-truck"></i><span>Suppliers</span></a>
+                <a href="/expenses" class="nav-item active"><i class="fas fa-wallet"></i><span>Expenses</span></a>
+                <a href="/reports" class="nav-item"><i class="fas fa-chart-bar"></i><span>Reports</span></a>
+                <a href="/settings" class="nav-item"><i class="fas fa-cog"></i><span>Settings</span></a>
+                <a href="/login" class="nav-item" style="margin-top: 2rem;" onclick="logout(); return false;"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-header">
+                <div class="header-search"><i class="fas fa-search"></i><input type="text" id="searchInput" placeholder="Search expenses..."></div>
+                <div class="header-actions">
+                    <button class="notification-btn"><i class="fas fa-bell"></i><span class="notification-badge">0</span></button>
+                    <a href="/settings" style="text-decoration: none;">
+                        <div class="user-menu">
+                            <div class="user-avatar" id="userAvatar">U</div>
+                            <div class="user-info"><span class="user-name" id="userName">Loading...</span><span class="user-role" id="shopName">Loading...</span></div>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                    </a>
+                </div>
+            </header>
+
+            <div class="page-header">
+                <div class="page-title"><h1>Expense Management</h1><p>Track and manage all your business expenses</p></div>
+                <div class="header-actions">
+                    <button class="btn btn-outline" onclick="exportExpenses()"><i class="fas fa-download"></i> Export</button>
+                    <button class="btn btn-primary" onclick="openAddExpenseModal()"><i class="fas fa-plus"></i> Add Expense</button>
+                </div>
+            </div>
+
+            <div class="expense-stats" id="expenseStats">
+                <div class="stat-card"><div class="stat-icon"><i class="fas fa-rupee-sign"></i></div><div class="stat-content"><h3>Total Expenses</h3><div class="stat-value" id="totalExpenses">₹0</div><div class="stat-change negative" id="totalExpensesPeriod">This Month</div></div></div>
+                <div class="stat-card"><div class="stat-icon"><i class="fas fa-chart-line"></i></div><div class="stat-content"><h3>vs Last Month</h3><div class="stat-value" id="vsLastMonth">0%</div><div class="stat-change negative" id="vsLastMonthLabel">Change</div></div></div>
+                <div class="stat-card"><div class="stat-icon"><i class="fas fa-calendar"></i></div><div class="stat-content"><h3>Daily Average</h3><div class="stat-value" id="dailyAverage">₹0</div><div class="stat-change" id="dailyAverageLabel">Last 30 days</div></div></div>
+                <div class="stat-card"><div class="stat-icon"><i class="fas fa-credit-card"></i></div><div class="stat-content"><h3>Pending</h3><div class="stat-value" id="pendingExpenses">₹0</div><div class="stat-change" id="pendingLabel">To be paid</div></div></div>
+            </div>
+
+            <div class="summary-cards" id="summaryCards">
+                <div class="summary-card"><div class="summary-header"><h3>Fixed Expenses</h3><div class="summary-icon"><i class="fas fa-home"></i></div></div><div class="summary-value" id="fixedExpenses">₹0</div><div class="summary-change negative" id="fixedPercent">0% of total</div></div>
+                <div class="summary-card"><div class="summary-header"><h3>Variable Expenses</h3><div class="summary-icon"><i class="fas fa-chart-line"></i></div></div><div class="summary-value" id="variableExpenses">₹0</div><div class="summary-change positive" id="variablePercent">0% of total</div></div>
+                <div class="summary-card"><div class="summary-header"><h3>One-time Expenses</h3><div class="summary-icon"><i class="fas fa-bolt"></i></div></div><div class="summary-value" id="oneTimeExpenses">₹0</div><div class="summary-change" id="oneTimePercent">0% of total</div></div>
+            </div>
+
+            <div class="categories-section">
+                <div class="section-header"><div class="section-title"><i class="fas fa-tags"></i> Expense Categories</div><button class="btn btn-outline btn-sm" onclick="openCategoryManager()"><i class="fas fa-cog"></i> Manage</button></div>
+                <div class="categories-grid" id="categoriesGrid"><div class="loading">Loading categories...</div></div>
+            </div>
+
+            <div class="filters-section">
+                <div class="filters-header"><div class="filters-title"><i class="fas fa-filter"></i> Filter Expenses</div><button class="btn btn-outline btn-sm" onclick="clearFilters()"><i class="fas fa-times"></i> Clear Filters</button></div>
+                <div class="filters-grid">
+                    <div class="filter-group"><label class="filter-label">Category</label><select class="filter-select" id="categoryFilter" onchange="applyFilters()"><option value="">All Categories</option><option value="rent">Rent</option><option value="electricity">Electricity</option><option value="salary">Salary</option><option value="maintenance">Maintenance</option><option value="internet">Internet</option><option value="water">Water</option><option value="transport">Transport</option><option value="other">Other</option></select></div>
+                    <div class="filter-group"><label class="filter-label">Payment Method</label><select class="filter-select" id="paymentFilter" onchange="applyFilters()"><option value="">All Methods</option><option value="cash">Cash</option><option value="card">Card</option><option value="upi">UPI</option><option value="bank">Bank Transfer</option></select></div>
+                    <div class="filter-group"><label class="filter-label">Date Range</label><select class="filter-select" id="dateFilter" onchange="applyFilters()"><option value="">Select Range</option><option value="today">Today</option><option value="week">This Week</option><option value="month">This Month</option><option value="year">This Year</option></select></div>
+                    <div class="filter-group"><label class="filter-label">Amount Range</label><select class="filter-select" id="amountFilter" onchange="applyFilters()"><option value="">All Amounts</option><option value="0-1000">Under ₹1,000</option><option value="1000-5000">₹1,000 - ₹5,000</option><option value="5000-10000">₹5,000 - ₹10,000</option><option value="10000+">Above ₹10,000</option></select></div>
+                </div>
+                <div class="filter-actions"><button class="btn btn-primary" onclick="applyFilters()"><i class="fas fa-search"></i> Apply Filters</button></div>
+            </div>
+
+            <div class="expenses-table-container">
+                <table class="expenses-table">
+                    <thead><tr><th>Date</th><th>Expense Name</th><th>Category</th><th>Amount</th><th>Payment Method</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody id="expensesTableBody"><tr><td colspan="7" class="loading">Loading expenses...</td></tr></tbody>
+                </table>
+                <div class="pagination" id="pagination">
+                    <button class="page-btn" id="prevPage" onclick="changePage(-1)" disabled><i class="fas fa-chevron-left"></i></button>
+                    <span id="pageInfo">Page 1</span>
+                    <button class="page-btn" id="nextPage" onclick="changePage(1)"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="quick-actions">
+        <button class="quick-actions-btn"><i class="fas fa-plus"></i></button>
+        <div class="quick-actions-menu">
+            <a href="#" class="quick-action-item" onclick="openAddExpenseModal()"><i class="fas fa-wallet"></i><span>Add Expense</span></a>
+            <a href="#" class="quick-action-item" onclick="exportExpenses()"><i class="fas fa-download"></i><span>Export Expenses</span></a>
+            <a href="#" class="quick-action-item" onclick="viewReports()"><i class="fas fa-chart-line"></i><span>View Reports</span></a>
+        </div>
+    </div>
+
+    <!-- Add Expense Modal -->
+    <div id="addExpenseModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h2>Add New Expense</h2><button class="modal-close" onclick="closeAddExpenseModal()"><i class="fas fa-times"></i></button></div>
+            <form id="addExpenseForm" onsubmit="addExpense(event)">
+                <div class="form-row"><label class="form-label">Expense Name</label><input type="text" id="expenseName" class="form-control" placeholder="e.g., Shop Rent, Electricity Bill" required></div>
+                <div class="form-row-half"><div><label class="form-label">Category</label><select id="expenseCategory" class="form-control" required><option value="">Select Category</option><option value="rent">Rent</option><option value="electricity">Electricity</option><option value="salary">Salary</option><option value="maintenance">Maintenance</option><option value="internet">Internet</option><option value="water">Water</option><option value="transport">Transport</option><option value="other">Other</option></select></div>
+                <div><label class="form-label">Amount (₹)</label><input type="number" id="expenseAmount" class="form-control" placeholder="Enter amount" required></div></div>
+                <div class="form-row-half"><div><label class="form-label">Payment Method</label><select id="expensePaymentMethod" class="form-control" required><option value="">Select Method</option><option value="cash">Cash</option><option value="card">Card</option><option value="upi">UPI</option><option value="bank">Bank Transfer</option></select></div>
+                <div><label class="form-label">Date</label><input type="date" id="expenseDate" class="form-control" required></div></div>
+                <div class="form-row"><label class="form-label">Notes (Optional)</label><textarea id="expenseNotes" class="form-control" placeholder="Add any additional details..."></textarea></div>
+                <div class="modal-footer"><button type="button" class="btn btn-outline" onclick="closeAddExpenseModal()">Cancel</button><button type="submit" class="btn btn-primary">Add Expense</button></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Expense Modal -->
+    <div id="editExpenseModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h2>Edit Expense</h2><button class="modal-close" onclick="closeEditExpenseModal()"><i class="fas fa-times"></i></button></div>
+            <form id="editExpenseForm" onsubmit="updateExpense(event)">
+                <input type="hidden" id="editExpenseId">
+                <div class="form-row"><label class="form-label">Expense Name</label><input type="text" id="editExpenseName" class="form-control" required></div>
+                <div class="form-row-half"><div><label class="form-label">Category</label><select id="editExpenseCategory" class="form-control" required><option value="rent">Rent</option><option value="electricity">Electricity</option><option value="salary">Salary</option><option value="maintenance">Maintenance</option><option value="internet">Internet</option><option value="water">Water</option><option value="transport">Transport</option><option value="other">Other</option></select></div>
+                <div><label class="form-label">Amount (₹)</label><input type="number" id="editExpenseAmount" class="form-control" required></div></div>
+                <div class="form-row-half"><div><label class="form-label">Payment Method</label><select id="editExpensePaymentMethod" class="form-control" required><option value="cash">Cash</option><option value="card">Card</option><option value="upi">UPI</option><option value="bank">Bank Transfer</option></select></div>
+                <div><label class="form-label">Date</label><input type="date" id="editExpenseDate" class="form-control" required></div></div>
+                <div class="form-row"><label class="form-label">Notes</label><textarea id="editExpenseNotes" class="form-control" rows="2"></textarea></div>
+                <div class="modal-footer"><button type="button" class="btn btn-outline" onclick="closeEditExpenseModal()">Cancel</button><button type="submit" class="btn btn-primary">Update Expense</button></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Category Manager Modal -->
+    <div id="categoryManagerModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header"><h2>Manage Expense Categories</h2><button class="modal-close" onclick="closeCategoryManager()"><i class="fas fa-times"></i></button></div>
+            <div id="categoryList" class="category-manager"><div class="loading">Loading categories...</div></div>
+            <button class="btn btn-outline add-category-btn" onclick="showAddCategoryForm()"><i class="fas fa-plus"></i> Add New Category</button>
+            <div id="addCategoryForm" style="display: none; margin-top: 1rem; padding: 1rem; background: var(--gray-50); border-radius: 0.75rem;">
+                <div class="form-row"><label class="form-label">Category Name</label><input type="text" id="newCategoryName" class="form-control" placeholder="e.g., Marketing, Insurance"></div>
+                <div class="form-row"><label class="form-label">Budget Limit (Optional)</label><input type="number" id="newCategoryBudget" class="form-control" placeholder="Enter budget amount"></div>
+                <div class="form-row"><label class="form-label">Icon Class</label><input type="text" id="newCategoryIcon" class="form-control" placeholder="fa-chart-line, fa-building, etc." value="fa-tag"></div>
+                <div class="modal-footer" style="margin-top: 0.5rem;"><button type="button" class="btn btn-outline" onclick="hideAddCategoryForm()">Cancel</button><button type="button" class="btn btn-primary" onclick="addNewCategory()">Add Category</button></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let token = localStorage.getItem('token');
+        if (!token) window.location.href = '/login';
+        
+        let allExpenses = [];
+        let filteredExpenses = [];
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let customCategories = JSON.parse(localStorage.getItem('expenseCategories') || '[]');
+        
+        // Default categories
+        const defaultCategories = [
+            { id: 'rent', name: 'Rent', icon: 'fa-home', budget: 0 },
+            { id: 'electricity', name: 'Electricity', icon: 'fa-bolt', budget: 0 },
+            { id: 'salary', name: 'Salary', icon: 'fa-users', budget: 0 },
+            { id: 'maintenance', name: 'Maintenance', icon: 'fa-tools', budget: 0 },
+            { id: 'internet', name: 'Internet', icon: 'fa-wifi', budget: 0 },
+            { id: 'water', name: 'Water', icon: 'fa-water', budget: 0 },
+            { id: 'transport', name: 'Transport', icon: 'fa-truck', budget: 0 },
+            { id: 'other', name: 'Other', icon: 'fa-ellipsis-h', budget: 0 }
+        ];
+        
+        function getAllCategories() {
+            return [...defaultCategories, ...customCategories];
+        }
+        
+        // Helper functions
+        function getInitials(name) { return name ? name.substring(0, 2).toUpperCase() : 'U'; }
+        function escapeHtml(text) { if (!text) return ''; return text.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;'); }
+        
+        function formatNumber(num) {
+            if (num === undefined || num === null || isNaN(num)) return '0';
+            return Number(num).toLocaleString('en-IN');
+        }
+        
+        function formatCurrency(num) {
+            return '₹' + formatNumber(num);
+        }
+        
+        function getCategoryName(catId) {
+            const cat = getAllCategories().find(c => c.id === catId);
+            return cat ? cat.name : catId.charAt(0).toUpperCase() + catId.slice(1);
+        }
+        
+        function getCategoryIcon(catId) {
+            const cat = getAllCategories().find(c => c.id === catId);
+            return cat ? cat.icon : 'fa-tag';
+        }
+        
+        function getPaymentName(pay) {
+            const names = { cash: 'Cash', card: 'Card', upi: 'UPI', bank: 'Bank Transfer' };
+            return names[pay] || pay;
+        }
+        
+        // Load user info
+        async function loadUserInfo() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (user) {
+                document.getElementById('userName').innerText = user.username;
+                document.getElementById('shopName').innerText = user.shop_name || 'Your Shop';
+                document.getElementById('userAvatar').innerText = getInitials(user.username);
+            }
+            document.getElementById('expenseDate').value = new Date().toISOString().split('T')[0];
+        }
+        
+        // Load expenses
+        async function loadExpenses() {
+            try {
+                const response = await fetch('/api/expenses', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    allExpenses = data.expenses || [];
+                    updateStats();
+                    updateCategoryDropdowns();
+                    applyFilters();
+                } else {
+                    document.getElementById('expensesTableBody').innerHTML = '<tr><td colspan="7" class="no-data">Failed to load expenses</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading expenses:', error);
+                document.getElementById('expensesTableBody').innerHTML = '<tr><td colspan="7" class="no-data">Error loading expenses</td></tr>';
+            }
+        }
+        
+        function updateCategoryDropdowns() {
+            const categories = getAllCategories();
+            const options = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            document.querySelectorAll('#expenseCategory, #categoryFilter, #editExpenseCategory').forEach(select => {
+                if (select) {
+                    const currentValue = select.value;
+                    select.innerHTML = '<option value="">Select Category</option>' + options;
+                    if (currentValue && categories.find(c => c.id === currentValue)) select.value = currentValue;
+                }
+            });
+        }
+        
+        // Update stats
+        function updateStats() {
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+            const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+            const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+            
+            const currentMonthExpenses = allExpenses.filter(e => {
+                const d = new Date(e.expense_date);
+                return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+            });
+            
+            const lastMonthExpenses = allExpenses.filter(e => {
+                const d = new Date(e.expense_date);
+                return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
+            });
+            
+            const total = currentMonthExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+            const lastTotal = lastMonthExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+            const vsLastMonth = lastTotal > 0 ? ((total - lastTotal) / lastTotal * 100).toFixed(1) : 0;
+            
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            const last30Days = allExpenses.filter(e => new Date(e.expense_date) >= thirtyDaysAgo);
+            const dailyAvg = last30Days.length > 0 ? last30Days.reduce((sum, e) => sum + (e.amount || 0), 0) / 30 : 0;
+            
+            const pending = allExpenses.filter(e => e.status === 'pending').reduce((sum, e) => sum + (e.amount || 0), 0);
+            
+            const fixed = allExpenses.filter(e => e.category === 'rent' || e.category === 'salary').reduce((sum, e) => sum + (e.amount || 0), 0);
+            const variable = allExpenses.filter(e => e.category === 'electricity' || e.category === 'water' || e.category === 'internet').reduce((sum, e) => sum + (e.amount || 0), 0);
+            const oneTime = total - fixed - variable;
+            
+            document.getElementById('totalExpenses').innerHTML = formatCurrency(total);
+            document.getElementById('vsLastMonth').innerHTML = (vsLastMonth >= 0 ? '+' : '') + vsLastMonth + '%';
+            document.getElementById('dailyAverage').innerHTML = formatCurrency(dailyAvg);
+            document.getElementById('pendingExpenses').innerHTML = formatCurrency(pending);
+            
+            document.getElementById('fixedExpenses').innerHTML = formatCurrency(fixed);
+            document.getElementById('variableExpenses').innerHTML = formatCurrency(variable);
+            document.getElementById('oneTimeExpenses').innerHTML = formatCurrency(oneTime);
+            document.getElementById('fixedPercent').innerHTML = total > 0 ? ((fixed / total) * 100).toFixed(1) + '% of total' : '0% of total';
+            document.getElementById('variablePercent').innerHTML = total > 0 ? ((variable / total) * 100).toFixed(1) + '% of total' : '0% of total';
+            document.getElementById('oneTimePercent').innerHTML = total > 0 ? ((oneTime / total) * 100).toFixed(1) + '% of total' : '0% of total';
+            
+            updateCategoryChart();
+            renderCategoriesGrid();
+        }
+        
+       async function updateCategoryChart(filteredSales) {
+    try {
+        // First, get all categories from database
+        const categoriesRes = await fetch('/api/categories', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const categoriesData = await categoriesRes.json();
+        
+        // Initialize category revenue object
+        const categoryRevenue = {};
+        
+        if (categoriesData.success && categoriesData.categories) {
+            categoriesData.categories.forEach(cat => {
+                categoryRevenue[cat.name] = 0;
+            });
+        } else {
+            // Fallback categories
+            const defaultCategories = ['Groceries', 'Dairy', 'Beverages', 'Snacks', 'Household', 'Others'];
+            defaultCategories.forEach(cat => {
+                categoryRevenue[cat] = 0;
+            });
+        }
+        
+        // For each sale, get items and calculate revenue by category
+        for (const sale of filteredSales) {
+            try {
+                const itemsRes = await fetch(`/api/sales/${sale.id}/items`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const itemsData = await itemsRes.json();
+                const items = itemsData.items || [];
+                
+                for (const item of items) {
+                    // Find product to get its category
+                    const product = allProducts.find(p => p.id === item.product_id);
+                    if (product) {
+                        // Get category name
+                        let categoryName = 'Others';
+                        if (product.category_id === 1) categoryName = 'Groceries';
+                        else if (product.category_id === 2) categoryName = 'Dairy';
+                        else if (product.category_id === 3) categoryName = 'Beverages';
+                        else if (product.category_id === 4) categoryName = 'Snacks';
+                        else if (product.category_id === 5) categoryName = 'Household';
+                        
+                        // Calculate revenue for this item
+                        const revenue = (item.price_at_time || product.selling_price || 0) * item.quantity;
+                        
+                        if (categoryRevenue[categoryName] !== undefined) {
+                            categoryRevenue[categoryName] += revenue;
+                        } else {
+                            categoryRevenue['Others'] += revenue;
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error('Error fetching sale items:', err);
+            }
+        }
+        
+        // Filter out categories with zero revenue
+        const labels = Object.keys(categoryRevenue).filter(key => categoryRevenue[key] > 0);
+        const values = labels.map(key => categoryRevenue[key]);
+        
+        // If no data, show sample data
+        if (labels.length === 0) {
+            labels.push('No Sales Data');
+            values.push(1);
+        }
+        
+        // Destroy existing chart if any
+        if (categoryChart) categoryChart.destroy();
+        
+        // Create new pie chart
+        const catCtx = document.getElementById('categoryChart').getContext('2d');
+        categoryChart = new Chart(catCtx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#f97316'],
+                    borderWidth: 0,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { 
+                        position: 'bottom', 
+                        labels: { 
+                            font: { size: 12 },
+                            padding: 15,
+                            usePointStyle: true,
+                            pointStyle: 'circle'
+                        } 
+                    },
+                    tooltip: { 
+                        callbacks: { 
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return `${label}: ${formatCurrency(value)} (${percentage}%)`;
+                            }
+                        } 
+                    }
+                },
+                cutout: '60%'
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error updating category chart:', error);
+        // Create fallback chart
+        if (categoryChart) categoryChart.destroy();
+        const catCtx = document.getElementById('categoryChart').getContext('2d');
+        categoryChart = new Chart(catCtx, {
+            type: 'doughnut',
+            data: { 
+                labels: ['No Data'], 
+                datasets: [{ 
+                    data: [1], 
+                    backgroundColor: ['#6366f1'], 
+                    borderWidth: 0 
+                }] 
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                },
+                cutout: '60%'
+            }
+        });
+    }
+}
+        // Category Manager Functions
+        function openCategoryManager() {
+            renderCategoryList();
+            document.getElementById('categoryManagerModal').classList.add('active');
+        }
+        
+        function closeCategoryManager() {
+            document.getElementById('categoryManagerModal').classList.remove('active');
+            hideAddCategoryForm();
+        }
+        
+        function renderCategoryList() {
+            const container = document.getElementById('categoryList');
+            const categories = getAllCategories();
+            container.innerHTML = categories.map(cat => `
+                <div class="category-item">
+                    <div class="category-info">
+                        <div class="category-icon"><i class="fas ${cat.icon}"></i></div>
+                        <div class="category-details">
+                            <h4>${cat.name}</h4>
+                            <p>ID: ${cat.id}</p>
+                        </div>
+                    </div>
+                    <div class="category-budget">
+                        <input type="number" id="budget_${cat.id}" class="budget-input" value="${cat.budget}" placeholder="Budget" onchange="updateCategoryBudget('${cat.id}', this.value)">
+                    </div>
+                    ${!defaultCategories.find(d => d.id === cat.id) ? `
+                        <button class="edit-category-btn" onclick="editCategory('${cat.id}')"><i class="fas fa-edit"></i></button>
+                        <button class="delete-category-btn" onclick="deleteCategory('${cat.id}')"><i class="fas fa-trash"></i></button>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+        
+        function renderCategoriesGrid() {
+            const container = document.getElementById('categoriesGrid');
+            const categories = getAllCategories();
+            
+            if (categories.length === 0) {
+                container.innerHTML = '<div class="no-data">No categories available</div>';
+                return;
+            }
+            
+            container.innerHTML = categories.map(cat => {
+                const catExpenses = allExpenses.filter(e => e.category === cat.id);
+                const spent = catExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+                const count = catExpenses.length;
+                let budgetHtml = '';
+                
+                if (cat.budget > 0) {
+                    const percent = Math.min(Math.round((spent / cat.budget) * 100), 100);
+                    const isOver = spent > cat.budget;
+                    budgetHtml = `
+                        <div style="margin-top:0.5rem; background: var(--gray-200); border-radius: 1rem; height: 6px; overflow: hidden;">
+                            <div style="width: ${percent}%; background-color: ${isOver ? 'var(--danger)' : 'var(--primary)'}; height: 100%;"></div>
+                        </div>
+                        <div style="color: var(--gray-500); font-size: 0.75rem; display: flex; justify-content: space-between; margin-top: 0.25rem;">
+                            <span>${percent}% used</span>
+                            <span class="${isOver ? 'negative' : ''}">${formatCurrency(cat.budget)} budget</span>
+                        </div>
+                    `;
+                }
+                
+                return `
+                    <div style="background: white; border: 1px solid var(--gray-200); border-radius: 1rem; padding: 1.25rem; transition: all 0.3s; display: flex; flex-direction: column;">
+                        <div style="width: 40px; height: 40px; background: var(--primary-soft); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--primary); margin-bottom: 1rem;"><i class="fas ${cat.icon}"></i></div>
+                        <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem;">${cat.name}</div>
+                        <div style="font-weight: 700; font-size: 1.5rem; color: var(--primary); margin-bottom: 0.5rem;">${formatCurrency(spent)}</div>
+                        <div style="color: var(--gray-500); font-size: 0.85rem; margin-bottom: auto;">
+                            <span>${count} transactions</span>
+                        </div>
+                        ${budgetHtml}
+                    </div>
+                `;
+            }).join('');
+            
+            // Reapply grid layout just in case
+            container.style.display = 'grid';
+            container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(200px, 1fr))';
+            container.style.gap = '1.5rem';
+        }
+
+        function updateCategoryBudget(categoryId, budget) {
+            const cat = customCategories.find(c => c.id === categoryId);
+            if (cat) {
+                cat.budget = parseFloat(budget) || 0;
+                localStorage.setItem('expenseCategories', JSON.stringify(customCategories));
+            }
+            updateCategoryChart();
+        }
+        
+        function showAddCategoryForm() {
+            document.getElementById('addCategoryForm').style.display = 'block';
+        }
+        
+        function hideAddCategoryForm() {
+            document.getElementById('addCategoryForm').style.display = 'none';
+            document.getElementById('newCategoryName').value = '';
+            document.getElementById('newCategoryBudget').value = '';
+            document.getElementById('newCategoryIcon').value = 'fa-tag';
+        }
+        
+        function addNewCategory() {
+            const name = document.getElementById('newCategoryName').value.trim();
+            if (!name) { alert('Please enter category name'); return; }
+            
+            const id = name.toLowerCase().replace(/[^a-z]/g, '_');
+            if (defaultCategories.find(c => c.id === id) || customCategories.find(c => c.id === id)) {
+                alert('Category already exists!');
+                return;
+            }
+            
+            const icon = document.getElementById('newCategoryIcon').value.trim() || 'fa-tag';
+            const budget = parseFloat(document.getElementById('newCategoryBudget').value) || 0;
+            
+            customCategories.push({ id, name, icon, budget });
+            localStorage.setItem('expenseCategories', JSON.stringify(customCategories));
+            
+            hideAddCategoryForm();
+            renderCategoryList();
+            updateCategoryDropdowns();
+            updateCategoryChart();
+            alert(`Category "${name}" added successfully!`);
+        }
+        
+        function editCategory(categoryId) {
+            const cat = customCategories.find(c => c.id === categoryId);
+            if (!cat) return;
+            const newName = prompt('Enter new category name:', cat.name);
+            if (newName && newName.trim()) {
+                cat.name = newName.trim();
+                localStorage.setItem('expenseCategories', JSON.stringify(customCategories));
+                renderCategoryList();
+                updateCategoryDropdowns();
+                updateCategoryChart();
+            }
+        }
+        
+        function deleteCategory(categoryId) {
+            if (!confirm('Delete this category? Expenses with this category will be moved to "Other".')) return;
+            customCategories = customCategories.filter(c => c.id !== categoryId);
+            localStorage.setItem('expenseCategories', JSON.stringify(customCategories));
+            renderCategoryList();
+            updateCategoryDropdowns();
+            updateCategoryChart();
+            alert('Category deleted!');
+        }
+        
+        // Apply filters
+        function applyFilters() {
+            const category = document.getElementById('categoryFilter').value;
+            const payment = document.getElementById('paymentFilter').value;
+            const dateRange = document.getElementById('dateFilter').value;
+            const amountRange = document.getElementById('amountFilter').value;
+            const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
+            
+            filteredExpenses = allExpenses.filter(expense => {
+                if (category && expense.category !== category) return false;
+                if (payment && expense.payment_method !== payment) return false;
+                if (searchTerm && !expense.expense_name.toLowerCase().includes(searchTerm)) return false;
+                
+                if (dateRange) {
+                    const d = new Date(expense.expense_date);
+                    const now = new Date();
+                    if (dateRange === 'today' && d.toDateString() !== now.toDateString()) return false;
+                    if (dateRange === 'week') {
+                        const weekAgo = new Date(now.setDate(now.getDate() - 7));
+                        if (d < weekAgo) return false;
+                    }
+                    if (dateRange === 'month' && (d.getMonth() !== now.getMonth() || d.getFullYear() !== now.getFullYear())) return false;
+                    if (dateRange === 'year' && d.getFullYear() !== now.getFullYear()) return false;
+                }
+                
+                if (amountRange) {
+                    const [min, max] = amountRange.split('-');
+                    if (max && (expense.amount < parseInt(min) || expense.amount > parseInt(max))) return false;
+                    if (amountRange === '10000+' && expense.amount < 10000) return false;
+                }
+                return true;
+            });
+            
+            currentPage = 1;
+            renderExpensesTable();
+        }
+        
+        function clearFilters() {
+            document.getElementById('categoryFilter').value = '';
+            document.getElementById('paymentFilter').value = '';
+            document.getElementById('dateFilter').value = '';
+            document.getElementById('amountFilter').value = '';
+            if (document.getElementById('searchInput')) document.getElementById('searchInput').value = '';
+            applyFilters();
+        }
+        
+        function filterByCategory(category) {
+            document.getElementById('categoryFilter').value = category;
+            applyFilters();
+        }
+        
+        function renderExpensesTable() {
+            const start = (currentPage - 1) * itemsPerPage;
+            const paginated = filteredExpenses.slice(start, start + itemsPerPage);
+            const totalPages = Math.ceil(filteredExpenses.length / itemsPerPage);
+            
+            document.getElementById('pageInfo').innerText = `Page ${currentPage} of ${totalPages || 1}`;
+            document.getElementById('prevPage').disabled = currentPage === 1;
+            document.getElementById('nextPage').disabled = currentPage === totalPages || totalPages === 0;
+            
+            const tbody = document.getElementById('expensesTableBody');
+            if (!paginated.length) {
+                tbody.innerHTML = '<tr><td colspan="7" class="no-data">No expenses found</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = paginated.map(e => `
+                <tr>
+                    <td>${new Date(e.expense_date).toLocaleDateString('en-IN')}</td>
+                    <td>${escapeHtml(e.expense_name)}</td>
+                    <td><span class="category-badge ${e.category}">${getCategoryName(e.category)}</span></td>
+                    <td>${formatCurrency(e.amount)}</td>
+                    <td><span class="payment-badge ${e.payment_method}">${getPaymentName(e.payment_method)}</span></td>
+                    <td><span class="status-badge ${e.status || 'paid'}">${e.status === 'pending' ? 'Pending' : 'Paid'}</span></td>
+                    <td>
+                        <button class="action-btn" onclick="editExpense(${e.id})"><i class="fas fa-edit"></i></button>
+                        <button class="action-btn delete" onclick="deleteExpense(${e.id})"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        function changePage(delta) {
+            const totalPages = Math.ceil(filteredExpenses.length / itemsPerPage);
+            const newPage = currentPage + delta;
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentPage = newPage;
+                renderExpensesTable();
+            }
+        }
+        
+        // Add expense
+        async function addExpense(event) {
+            event.preventDefault();
+            const submitBtn = event.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+            submitBtn.disabled = true;
+            
+            const expenseData = {
+                expense_name: document.getElementById('expenseName').value,
+                category: document.getElementById('expenseCategory').value,
+                amount: parseFloat(document.getElementById('expenseAmount').value),
+                payment_method: document.getElementById('expensePaymentMethod').value,
+                notes: document.getElementById('expenseNotes').value,
+                expense_date: document.getElementById('expenseDate').value
+            };
+            
+            try {
+                const response = await fetch('/api/expenses', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(expenseData)
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert('Expense added successfully!');
+                    closeAddExpenseModal();
+                    document.getElementById('addExpenseForm').reset();
+                    document.getElementById('expenseDate').value = new Date().toISOString().split('T')[0];
+                    loadExpenses();
+                } else {
+                    alert(data.message || 'Failed to add expense');
+                }
+            } catch (error) {
+                console.error('Error adding expense:', error);
+                alert('Server error. Please try again.');
+            } finally {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+        
+        // Edit expense
+        async function editExpense(id) {
+            const expense = allExpenses.find(e => e.id === id);
+            if (!expense) return;
+            
+            document.getElementById('editExpenseId').value = expense.id;
+            document.getElementById('editExpenseName').value = expense.expense_name || '';
+            document.getElementById('editExpenseCategory').value = expense.category || 'other';
+            document.getElementById('editExpenseAmount').value = expense.amount || 0;
+            document.getElementById('editExpensePaymentMethod').value = expense.payment_method || 'cash';
+            document.getElementById('editExpenseDate').value = expense.expense_date ? expense.expense_date.split('T')[0] : '';
+            document.getElementById('editExpenseNotes').value = expense.notes || '';
+            document.getElementById('editExpenseModal').classList.add('active');
+        }
+        
+        async function updateExpense(event) {
+            event.preventDefault();
+            const id = document.getElementById('editExpenseId').value;
+            const submitBtn = event.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+            submitBtn.disabled = true;
+            
+            const expenseData = {
+                expense_name: document.getElementById('editExpenseName').value,
+                category: document.getElementById('editExpenseCategory').value,
+                amount: parseFloat(document.getElementById('editExpenseAmount').value),
+                payment_method: document.getElementById('editExpensePaymentMethod').value,
+                notes: document.getElementById('editExpenseNotes').value,
+                expense_date: document.getElementById('editExpenseDate').value
+            };
+            
+            try {
+                const response = await fetch(`/api/expenses/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(expenseData)
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert('Expense updated successfully!');
+                    closeEditExpenseModal();
+                    loadExpenses();
+                } else {
+                    alert(data.message || 'Failed to update expense');
+                }
+            } catch (error) {
+                console.error('Error updating expense:', error);
+                alert('Server error. Please try again.');
+            } finally {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+        
+        // Delete expense
+        async function deleteExpense(id) {
+            const expense = allExpenses.find(e => e.id === id);
+            if (!confirm(`Are you sure you want to delete expense "${expense?.expense_name}"?`)) return;
+            
+            try {
+                const response = await fetch(`/api/expenses/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert('Expense deleted successfully!');
+                    loadExpenses();
+                } else {
+                    alert(data.message || 'Failed to delete expense');
+                }
+            } catch (error) {
+                console.error('Error deleting expense:', error);
+                alert('Server error. Please try again.');
+            }
+        }
+        
+        // Modal functions
+        function openAddExpenseModal() { document.getElementById('addExpenseModal').classList.add('active'); }
+        function closeAddExpenseModal() { document.getElementById('addExpenseModal').classList.remove('active'); document.getElementById('addExpenseForm').reset(); document.getElementById('expenseDate').value = new Date().toISOString().split('T')[0]; }
+        function closeEditExpenseModal() { document.getElementById('editExpenseModal').classList.remove('active'); }
+        
+        // Export function
+        function exportExpenses() {
+            if (!filteredExpenses.length) { alert('No expenses to export'); return; }
+            const exportData = filteredExpenses.map(e => ({
+                'Date': new Date(e.expense_date).toLocaleDateString(),
+                'Expense Name': e.expense_name,
+                'Category': getCategoryName(e.category),
+                'Amount (₹)': e.amount,
+                'Payment Method': getPaymentName(e.payment_method),
+                'Status': e.status === 'pending' ? 'Pending' : 'Paid',
+                'Notes': e.notes || ''
+            }));
+            const headers = Object.keys(exportData[0]);
+            const csvRows = [headers.join(',')];
+            for (const row of exportData) {
+                const values = headers.map(h => { let v = row[h]; if (typeof v === 'string' && (v.includes(',') || v.includes('"'))) v = `"${v.replace(/"/g, '""')}"`; return v; });
+                csvRows.push(values.join(','));
+            }
+            const csvContent = '\uFEFF' + csvRows.join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `expenses_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            alert(`Exported ${filteredExpenses.length} expenses!`);
+        }
+        
+        function viewReports() { window.location.href = '/reports'; }
+        function logout() { localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href = '/login'; }
+        
+        // Event listeners
+        document.getElementById('searchInput')?.addEventListener('keyup', () => applyFilters());
+        window.onclick = e => { if (e.target.classList.contains('modal')) e.target.classList.remove('active'); };
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUserInfo();
+            loadExpenses();
+            
+            const qaBtn = document.querySelector('.quick-actions-btn');
+            const qaMenu = document.querySelector('.quick-actions-menu');
+            if (qaBtn && qaMenu) {
+                qaBtn.addEventListener('click', e => { e.stopPropagation(); qaMenu.classList.toggle('open'); qaBtn.style.transform = qaMenu.classList.contains('open') ? 'rotate(45deg)' : 'rotate(0deg)'; });
+                document.addEventListener('click', e => { if (qaMenu.classList.contains('open') && !qaBtn.contains(e.target) && !qaMenu.contains(e.target)) { qaMenu.classList.remove('open'); qaBtn.style.transform = 'rotate(0deg)'; } });
+                qaMenu.addEventListener('click', e => e.stopPropagation());
+            }
+        });
+        
+        setInterval(() => loadExpenses(), 2000);
+    </script>
+</body>
+</html>

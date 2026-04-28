@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShopTrack - Settings</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/setting.css">
+    
+    <style>
+        .loading { text-align: center; padding: 2rem; color: var(--gray-500); }
+        .success-message { background: #10b981; color: white; padding: 1rem; border-radius: 0.75rem; margin-bottom: 1rem; display: none; align-items: center; gap: 0.75rem; }
+        .error-message { background: #ef4444; color: white; padding: 1rem; border-radius: 0.75rem; margin-bottom: 1rem; display: none; align-items: center; gap: 0.75rem; }
+        .success-message i, .error-message i { font-size: 1.25rem; }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="/home" class="logo">
+                    <div class="logo-icon">ST</div>
+                    <span class="logo-text">ShopTrack</span>
+                </a>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="/home" class="nav-item">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="/inventory" class="nav-item">
+                    <i class="fas fa-box"></i>
+                    <span>Inventory</span>
+                    <span class="badge" id="lowStockBadge">0</span>
+                </a>
+                <a href="/sales" class="nav-item">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Sales</span>
+                </a>
+                <a href="/suppliers" class="nav-item">
+                    <i class="fas fa-truck"></i>
+                    <span>Suppliers</span>
+                </a>
+                <a href="/expenses" class="nav-item">
+                    <i class="fas fa-wallet"></i>
+                    <span>Expenses</span>
+                </a>
+                <a href="/reports" class="nav-item">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Reports</span>
+                </a>
+                <a href="/settings" class="nav-item active">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+                <a href="/login" class="nav-item" style="margin-top: 2rem;" onclick="logout(); return false;">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Header -->
+            <header class="top-header">
+                <div class="header-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Search settings...">
+                </div>
+                
+                <div class="header-actions">
+                    <button class="notification-btn">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge">0</span>
+                    </button>
+                    
+                    <a href="/settings" class="user-menu">
+                        <div class="user-avatar" id="userAvatar">U</div>
+                        <div class="user-info">
+                            <span class="user-name" id="userName">Loading...</span>
+                            <span class="user-role" id="shopName">Loading...</span>
+                        </div>
+                        <i class="fas fa-chevron-down"></i>
+                    </a>
+                </div>
+            </header>
+
+            <!-- Page Header -->
+            <div class="page-header">
+                <div class="page-title">
+                    <h1>Settings</h1>
+                    <p>Manage your account, shop preferences, and system configurations</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-outline" onclick="saveAllSettings()">
+                        <i class="fas fa-save"></i> Save All Changes
+                    </button>
+                </div>
+            </div>
+
+            <!-- Success/Error Messages -->
+            <div id="successMessage" class="success-message"><i class="fas fa-check-circle"></i><span id="successText"></span></div>
+            <div id="errorMessage" class="error-message"><i class="fas fa-exclamation-circle"></i><span id="errorText"></span></div>
+
+            <!-- Settings Container -->
+            <div class="settings-container">
+                <!-- Settings Sidebar Navigation -->
+                <div class="settings-sidebar">
+                    <nav class="settings-nav">
+                        <button class="settings-nav-item active" onclick="switchSettingsTab('profile')">
+                            <i class="fas fa-user"></i>
+                            <span>Profile Settings</span>
+                        </button>
+                        <button class="settings-nav-item" onclick="switchSettingsTab('shop')">
+                            <i class="fas fa-store"></i>
+                            <span>Shop Details</span>
+                        </button>
+                        <button class="settings-nav-item" onclick="switchSettingsTab('security')">
+                            <i class="fas fa-shield-alt"></i>
+                            <span>Security</span>
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Settings Content -->
+                <div class="settings-content">
+                    <!-- Profile Settings Section -->
+                    <div id="profile-section" class="settings-section active">
+                        <div class="section-header">
+                            <h2>Profile Settings</h2>
+                            <p>Manage your personal information and account details</p>
+                        </div>
+
+                        <div class="avatar-upload">
+                            <div class="avatar-preview" id="avatarPreview">U</div>
+                            <div>
+                                <button class="avatar-upload-btn" onclick="uploadAvatar()">
+                                    <i class="fas fa-camera"></i> Change Photo
+                                </button>
+                                <p class="form-text">JPG, PNG or GIF. Max 2MB.</p>
+                            </div>
+                        </div>
+
+                        <form id="profileForm" class="settings-form">
+                            <div class="form-group">
+                                <label class="form-label">Username</label>
+                                <input type="text" id="username" class="form-control" placeholder="Username" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Email Address</label>
+                                <input type="email" id="email" class="form-control" placeholder="Email address" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Phone Number</label>
+                                <input type="tel" id="phone" class="form-control" placeholder="Phone number">
+                            </div>
+
+                            <button type="submit" class="btn btn-primary" onclick="updateProfile(event)">
+                                <i class="fas fa-save"></i> Update Profile
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Shop Details Section -->
+                    <div id="shop-section" class="settings-section">
+                        <div class="section-header">
+                            <h2>Shop Details</h2>
+                            <p>Manage your shop information and business details</p>
+                        </div>
+
+                        <div class="shop-card">
+                            <div class="shop-card-header">
+                                <h3 class="shop-card-title">Current Shop</h3>
+                                <span class="shop-card-badge" id="shopStatusBadge">Active</span>
+                            </div>
+                            <div class="shop-card-content">
+                                <div class="shop-info-item">
+                                    <span class="shop-info-label">Shop Name</span>
+                                    <span class="shop-info-value" id="displayShopName">-</span>
+                                </div>
+                                <div class="shop-info-item">
+                                    <span class="shop-info-label">GST Number</span>
+                                    <span class="shop-info-value" id="displayGST">-</span>
+                                </div>
+                                <div class="shop-info-item">
+                                    <span class="shop-info-label">PAN Number</span>
+                                    <span class="shop-info-value" id="displayPAN">-</span>
+                                </div>
+                                <div class="shop-info-item">
+                                    <span class="shop-info-label">Shop Type</span>
+                                    <span class="shop-info-value" id="displayShopType">-</span>
+                                </div>
+                                <div class="shop-info-item">
+                                    <span class="shop-info-label">Established</span>
+                                    <span class="shop-info-value" id="displayEstablished">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <form id="shopForm" class="settings-form">
+                            <div class="form-group">
+                                <label class="form-label">Shop Name</label>
+                                <input type="text" id="shopNameInput" class="form-control" placeholder="Shop name" required>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">GST Number</label>
+                                    <input type="text" id="gstNumber" class="form-control" placeholder="GST number">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">PAN Number</label>
+                                    <input type="text" id="panNumber" class="form-control" placeholder="PAN number">
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Shop Type</label>
+                                    <select id="shopType" class="form-control">
+                                        <option value="Kirana / General Store">Kirana / General Store</option>
+                                        <option value="Supermarket">Supermarket</option>
+                                        <option value="Provision Store">Provision Store</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Established Year</label>
+                                    <input type="number" id="establishedYear" class="form-control" placeholder="Year">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Shop Address</label>
+                                <textarea id="shopAddress" class="form-control" rows="2" placeholder="Shop address"></textarea>
+                            </div>
+
+                            <button class="btn btn-primary" onclick="updateShop(event)">
+                                <i class="fas fa-save"></i> Update Shop Details
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Security Section -->
+                    <div id="security-section" class="settings-section">
+                        <div class="section-header">
+                            <h2>Security</h2>
+                            <p>Manage your account security settings</p>
+                        </div>
+
+                        <form id="passwordForm" class="settings-form">
+                            <div class="form-group">
+                                <label class="form-label">Current Password</label>
+                                <input type="password" id="currentPassword" class="form-control" placeholder="Enter current password" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">New Password</label>
+                                <input type="password" id="newPassword" class="form-control" placeholder="Enter new password" required>
+                                <p class="form-text">Minimum 6 characters</p>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Confirm New Password</label>
+                                <input type="password" id="confirmPassword" class="form-control" placeholder="Confirm new password" required>
+                            </div>
+
+                            <button class="btn btn-primary" onclick="changePassword(event)">
+                                <i class="fas fa-key"></i> Change Password
+                            </button>
+                        </form>
+
+                        <!-- Danger Zone -->
+                        <div class="danger-zone">
+                            <h3>Danger Zone</h3>
+                            <p>Once you delete your account, there is no going back. Please be certain.</p>
+                            <button class="btn btn-danger" onclick="deleteAccount()">
+                                <i class="fas fa-trash"></i> Delete Account
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Global variables
+        let token = localStorage.getItem('token');
+        if (!token) window.location.href = '/login';
+        
+        let currentUser = null;
+        
+        // Helper functions
+        function getInitials(name) { 
+            return name ? name.substring(0, 2).toUpperCase() : 'U'; 
+        }
+        
+        function showMessage(text, type) {
+            const successDiv = document.getElementById('successMessage');
+            const errorDiv = document.getElementById('errorMessage');
+            
+            if (type === 'success') {
+                document.getElementById('successText').innerText = text;
+                successDiv.style.display = 'flex';
+                setTimeout(() => { successDiv.style.display = 'none'; }, 3000);
+            } else {
+                document.getElementById('errorText').innerText = text;
+                errorDiv.style.display = 'flex';
+                setTimeout(() => { errorDiv.style.display = 'none'; }, 3000);
+            }
+        }
+        
+        // Update user info across all pages (localStorage)
+        function updateGlobalUserInfo(updatedUser) {
+            const user = JSON.parse(localStorage.getItem('user'));
+            const newUser = { ...user, ...updatedUser };
+            localStorage.setItem('user', JSON.stringify(newUser));
+            currentUser = newUser;
+            
+            // Update current page display
+            document.getElementById('userName').innerText = newUser.username;
+            document.getElementById('userAvatar').innerText = getInitials(newUser.username);
+            document.getElementById('avatarPreview').innerText = getInitials(newUser.username);
+        }
+        
+        // Load user data
+        async function loadUserData() {
+            try {
+                const user = JSON.parse(localStorage.getItem('user'));
+                if (user) {
+                    currentUser = user;
+                    document.getElementById('userName').innerText = user.username;
+                    document.getElementById('shopName').innerText = user.shop_name || 'Your Shop';
+                    document.getElementById('userAvatar').innerText = getInitials(user.username);
+                    document.getElementById('avatarPreview').innerText = getInitials(user.username);
+                    
+                    // Load from backend to get latest data
+                    const response = await fetch('/api/auth/me', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }).catch(() => ({ json: () => ({ user: user }) }));
+                    
+                    const data = await response.json();
+                    const userData = data.user || user;
+                    
+                    // Update localStorage with backend data
+                    updateGlobalUserInfo({
+                        username: userData.username,
+                        email: userData.email,
+                        phone: userData.phone,
+                        shop_name: userData.shop_name
+                    });
+                    
+                    document.getElementById('username').value = userData.username || '';
+                    document.getElementById('email').value = userData.email || '';
+                    document.getElementById('phone').value = userData.phone || '';
+                    
+                    // Load shop details
+                    document.getElementById('shopNameInput').value = userData.shop_name || '';
+                    document.getElementById('displayShopName').innerText = userData.shop_name || '-';
+                    document.getElementById('displayGST').innerText = userData.gst || '-';
+                    document.getElementById('displayPAN').innerText = userData.pan || '-';
+                    document.getElementById('displayShopType').innerText = userData.shop_type || 'Kirana / General Store';
+                    document.getElementById('displayEstablished').innerText = userData.established || '-';
+                    document.getElementById('shopType').value = userData.shop_type || 'Kirana / General Store';
+                    document.getElementById('establishedYear').value = userData.established || '';
+                    document.getElementById('shopAddress').value = userData.address || '';
+                    document.getElementById('gstNumber').value = userData.gst || '';
+                    document.getElementById('panNumber').value = userData.pan || '';
+                }
+            } catch (error) {
+                console.error('Error loading user data:', error);
+            }
+        }
+        
+        // Update profile
+        async function updateProfile(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
+            
+            if (!username || !email) {
+                showMessage('Username and email are required', 'error');
+                return;
+            }
+            
+            // Show loading state
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+            btn.disabled = true;
+            
+            try {
+                const response = await fetch('/api/auth/update', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ username, email, phone })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    // Update localStorage with new data
+                    updateGlobalUserInfo({ username, email, phone });
+                    
+                    // Update display across all current page elements
+                    document.getElementById('userName').innerText = username;
+                    document.getElementById('userAvatar').innerText = getInitials(username);
+                    document.getElementById('avatarPreview').innerText = getInitials(username);
+                    
+                    showMessage('Profile updated successfully!', 'success');
+                } else {
+                    showMessage(data.message || 'Failed to update profile', 'error');
+                }
+            } catch (error) {
+                console.error('Error updating profile:', error);
+                showMessage('Server error. Please try again.', 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+        
+        // Update shop details
+        async function updateShop(event) {
+            event.preventDefault();
+            
+            const shopData = {
+                shop_name: document.getElementById('shopNameInput').value,
+                gst: document.getElementById('gstNumber').value,
+                pan: document.getElementById('panNumber').value,
+                shop_type: document.getElementById('shopType').value,
+                established: document.getElementById('establishedYear').value,
+                address: document.getElementById('shopAddress').value
+            };
+            
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+            btn.disabled = true;
+            
+            try {
+                const response = await fetch('/api/auth/shop', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(shopData)
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    // Update display
+                    document.getElementById('displayShopName').innerText = shopData.shop_name;
+                    document.getElementById('displayGST').innerText = shopData.gst || '-';
+                    document.getElementById('displayPAN').innerText = shopData.pan || '-';
+                    document.getElementById('displayShopType').innerText = shopData.shop_type;
+                    document.getElementById('displayEstablished').innerText = shopData.established || '-';
+                    document.getElementById('shopName').innerText = shopData.shop_name;
+                    
+                    // Update localStorage
+                    const user = JSON.parse(localStorage.getItem('user'));
+                    user.shop_name = shopData.shop_name;
+                    localStorage.setItem('user', JSON.stringify(user));
+                    
+                    showMessage('Shop details updated successfully!', 'success');
+                } else {
+                    showMessage(data.message || 'Failed to update shop details', 'error');
+                }
+            } catch (error) {
+                console.error('Error updating shop:', error);
+                showMessage('Server error. Please try again.', 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+        
+        // Change password - FULLY WORKING
+        async function changePassword(event) {
+            event.preventDefault();
+            
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (!currentPassword || !newPassword) {
+                showMessage('Please fill all password fields', 'error');
+                return;
+            }
+            
+            if (newPassword !== confirmPassword) {
+                showMessage('New passwords do not match', 'error');
+                return;
+            }
+            
+            if (newPassword.length < 6) {
+                showMessage('Password must be at least 6 characters', 'error');
+                return;
+            }
+            
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Changing...';
+            btn.disabled = true;
+            
+            try {
+                const response = await fetch('/api/auth/password', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ currentPassword, newPassword })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    showMessage('Password changed successfully! Please login again.', 'success');
+                    document.getElementById('passwordForm').reset();
+                    
+                    // Logout after 2 seconds to force re-login
+                    setTimeout(() => {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
+                        window.location.href = '/login';
+                    }, 2000);
+                } else {
+                    showMessage(data.message || 'Failed to change password', 'error');
+                }
+            } catch (error) {
+                console.error('Error changing password:', error);
+                showMessage('Server error. Please try again.', 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+        
+        // Save all settings
+        function saveAllSettings() {
+            updateProfile(new Event('submit'));
+            updateShop(new Event('submit'));
+        }
+        
+        // Upload avatar
+        function uploadAvatar() {
+            alert('Avatar upload feature coming soon!');
+        }
+        
+        // Delete account
+        async function deleteAccount() {
+            if (!confirm('Are you absolutely sure? This action cannot be undone!')) return;
+            const confirmText = prompt('Type "DELETE" to confirm account deletion:');
+            if (confirmText !== 'DELETE') return;
+            
+            try {
+                const response = await fetch('/api/auth/delete', {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    window.location.href = '/login';
+                } else {
+                    showMessage(data.message || 'Failed to delete account', 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting account:', error);
+                showMessage('Server error. Please try again.', 'error');
+            }
+        }
+        
+        // Logout
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        }
+        
+        // Switch settings tabs
+        function switchSettingsTab(tabId) {
+            document.querySelectorAll('.settings-nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+            
+            document.querySelectorAll('.settings-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(tabId + '-section').classList.add('active');
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUserData();
+        });
+    </script>
+</body>
+</html>
